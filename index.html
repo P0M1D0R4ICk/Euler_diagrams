@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Визуализатор операций над множествами</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Подключение KaTeX для математических формул -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+</head>
+<body>
+    <div class="theme-switch" title="Переключить тему">
+        <div class="theme-icon">🌙</div>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1>🎯 Визуализатор операций над множествами</h1>
+        </header>
+
+        <div class="main-content">
+            <!-- Левая панель - управление -->
+            <div class="control-panel">
+                <div class="section">
+                    <h2>📋 Создание множеств</h2>
+                    <div class="input-group">
+                        <label for="setName">Имя множества:</label>
+                        <input type="text" id="setName" value="A" maxlength="1" pattern="[A-Za-z]">
+                    </div>
+                    <div class="input-group">
+                        <label for="setElements">Элементы (через запятую):</label>
+                        <input type="text" id="setElements" placeholder="1, 2, 3, 4, 5">
+                    </div>
+                    <button id="addSetBtn" class="btn primary">➕ Добавить множество</button>
+                    <button id="randomSetBtn" class="btn secondary">🎲 Случайное множество</button>
+                </div>
+
+                <div class="section">
+                    <h2>⚡ Операции</h2>
+                    
+                    <!-- Выбор множеств для операций -->
+                    <div class="input-group">
+                        <label>Выберите множества для операций:</label>
+                        <div id="operationSets" class="sets-checkboxes">
+                            <!-- Чекбоксы будут добавляться динамически -->
+                        </div>
+                    </div>
+
+                    <div class="operations">
+                        <button id="intersectionBtn" class="btn secondary">🔻 Пересечение</button>
+                        <button id="unionBtn" class="btn secondary">🔺 Объединение</button>
+                    </div>
+
+                    <!-- Разность множеств -->
+                    <div class="input-group">
+                        <label>Разность множеств:</label>
+                        <div class="difference-controls">
+                            <select id="differenceSetA">
+                                <option value="">Выберите множество A</option>
+                            </select>
+                            <span class="difference-symbol">\</span>
+                            <select id="differenceSetB">
+                                <option value="">Выберите множество B</option>
+                            </select>
+                        </div>
+                        <button id="differenceBtn" class="btn secondary">➖ Вычислить разность</button>
+                    </div>
+
+                    <!-- Симметрическая разность -->
+                    <div class="input-group">
+                        <label>Симметрическая разность:</label>
+                        <div class="difference-controls">
+                            <select id="symmetricSetA">
+                                <option value="">Выберите множество A</option>
+                            </select>
+                            <span class="difference-symbol">△</span>
+                            <select id="symmetricSetB">
+                                <option value="">Выберите множество B</option>
+                            </select>
+                        </div>
+                        <button id="symmetricBtn" class="btn secondary">🔷 Симметрическая разность</button>
+                    </div>
+
+                    <button id="clearBtn" class="btn danger">🗑️ Очистить все</button>
+                </div>
+
+                <div class="section">
+                    <h2>📊 Созданные множества</h2>
+                    <div id="setsList" class="sets-list">
+                        <!-- Сюда будут добавляться созданные множества -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Правая панель - визуализация -->
+            <div class="visualization-panel">
+                <div class="canvas-container">
+                    <canvas id="vennCanvas" width="800" height="600"></canvas>
+                    <div id="canvasMessage" class="canvas-message">
+                        <h3>Добро пожаловать в визуализатор множеств! 🎯</h3>
+                        <p>Создайте множества слева, чтобы начать работу</p>
+                        <div class="sets-info">
+                            <h4>Как использовать:</h4>
+                            <div class="sets-info-item">
+                                <span>1. Введите имя множества (A, B, C...)</span>
+                            </div>
+                            <div class="sets-info-item">
+                                <span>2. Добавьте элементы через запятую</span>
+                            </div>
+                            <div class="sets-info-item">
+                                <span>3. Нажмите "Добавить множество"</span>
+                            </div>
+                            <div class="sets-info-item">
+                                <span>4. Выберите операцию для визуализации</span>
+                            </div>
+                            <div class="sets-info-item">
+                                <span>💡 <strong>Автоматическая расстановка</strong> кругов в зависимости от отношений между множествами</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Элемент для отображения формулы -->
+                <div id="formulaDisplay" class="formula-display">
+                    <!-- LaTeX формулы будут отображаться здесь -->
+                </div>
+                
+                <div id="relationshipInfo" class="relationship-info">
+                    <!-- Сюда будет выводиться информация об отношениях между множествами -->
+                </div>
+                
+                <div id="result" class="result-section">
+                    <h3>Результат операции:</h3>
+                    <div id="resultContent" class="result-content">
+                        <p>Выберите операцию для отображения результата</p>
+                    </div>
+                </div>
+                
+                <!-- Информация об элементах -->
+                <div id="elementInfo" class="element-info">
+                    <h4>Информация об элементах:</h4>
+                    <div id="elementList" class="element-list">
+                        <!-- Список элементов будет здесь -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Модальное окно для загрузки файла -->
+        <input type="file" id="fileLoader" accept=".json" style="display: none;">
+        
+        <!-- Уведомления -->
+        <div id="notificationContainer" style="position: fixed; top: 80px; right: 20px; z-index: 2000;"></div>
+    </div>
+
+    <!-- Подключение GSAP для анимаций -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

@@ -4,10 +4,434 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Визуализатор операций над множествами</title>
-    <link rel="stylesheet" href="style.css">
-    <!-- Подключение KaTeX для математических формул -->
+    <!-- Подключение KaTeX для рендеринга формул -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            transition: background 0.5s ease, color 0.3s ease;
+        }
+
+        body.dark-theme {
+            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+            color: #f3f4f6;
+        }
+
+        body.dark-theme h1, body.dark-theme h2, body.dark-theme h3, 
+        body.dark-theme h4, body.dark-theme label, body.dark-theme span, 
+        body.dark-theme p, body.dark-theme div {
+            color: #f3f4f6;
+        }
+
+        body.dark-theme .main-content {
+            background: #1f2937;
+            color: #f3f4f6;
+        }
+
+        body.dark-theme .section {
+            background: #374151;
+            border-left-color: #818cf8;
+            color: #f3f4f6;
+        }
+
+        body.dark-theme .input-group input, body.dark-theme .input-group select {
+            background: #1f2937;
+            color: #ffffff;
+            border-color: #4b5563;
+        }
+
+        body.dark-theme .canvas-container {
+            background: #111827;
+            border-color: #374151;
+        }
+
+        body.dark-theme .relationship-info {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border-left-color: #38bdf8;
+        }
+
+        body.dark-theme .result-section {
+            background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+            border-left-color: #34d399;
+        }
+
+        body.dark-theme .result-content {
+            background: #111827;
+            color: #f3f4f6;
+            border-color: #374151;
+        }
+
+        body.dark-theme .result-set {
+            background: #1f2937;
+            color: #34d399;
+        }
+
+        body.dark-theme .sets-checkboxes, body.dark-theme .formula-display, body.dark-theme .element-list {
+            background: #111827;
+            border-color: #374151;
+            color: #f3f4f6;
+        }
+
+        .theme-switch {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .theme-switch:hover {
+            transform: scale(1.1);
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .theme-icon {
+            font-size: 24px;
+            transition: transform 0.5s ease;
+        }
+
+        body.dark-theme .theme-icon {
+            transform: rotate(180deg);
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 30px;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: background 0.5s ease;
+        }
+
+        .section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            transition: box-shadow 0.3s ease, background 0.5s ease;
+            margin-bottom: 20px;
+        }
+
+        .section h2 {
+            margin-bottom: 15px;
+            color: #495057;
+            font-size: 1.2em;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e9ecef;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus, .input-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .btn.primary { background: #667eea; color: white; }
+        .btn.secondary { background: #6c757d; color: white; }
+        .btn.danger { background: #dc3545; color: white; }
+
+        .operations {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .sets-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .set-item {
+            background: white;
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 5px;
+            border: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .set-name {
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .set-elements {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .delete-set {
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            padding: 3px 8px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .visualization-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .canvas-container {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+            position: relative;
+            min-height: 500px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #vennCanvas {
+            max-width: 100%;
+            height: auto;
+            border-radius: 5px;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .canvas-message {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            font-size: 20px;
+            color: #666;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            border: 2px solid #e9ecef;
+            z-index: 10;
+        }
+
+        .canvas-container:not(:has(canvas[data-has-sets="true"])) .canvas-message {
+            display: block;
+        }
+
+        .relationship-info {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #2196f3;
+            text-align: center;
+        }
+
+        .result-section {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #28a745;
+        }
+
+        .result-content {
+            min-height: 60px;
+            padding: 15px;
+            background: white;
+            border-radius: 5px;
+            border: 1px solid #e9ecef;
+        }
+
+        .result-set {
+            font-family: 'Courier New', monospace;
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        .sets-checkboxes {
+            max-height: 120px;
+            overflow-y: auto;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            padding: 10px;
+            background: white;
+        }
+
+        .set-checkbox {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .set-checkbox input {
+            margin-right: 8px;
+        }
+
+        .set-color-indicator {
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+            margin-right: 8px;
+            display: inline-block;
+        }
+
+        .difference-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .difference-symbol {
+            font-weight: bold;
+            font-size: 18px;
+            color: #667eea;
+        }
+
+        .formula-display {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            border: 1px solid #ddd;
+        }
+
+        .element-info {
+            background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #ff9800;
+        }
+
+        .element-list {
+            max-height: 150px;
+            overflow-y: auto;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            border: 1px solid #ffcc80;
+            font-size: 14px;
+        }
+
+        .element-item {
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .notification {
+            background: rgba(0, 0, 0, 0.88);
+            color: white;
+            padding: 14px 22px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            animation: fadeInOut 4s ease forwards;
+        }
+
+        .notification.warning {
+            background: #d97706;
+            border-left: 5px solid #f59e0b;
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(-20px); }
+            15% { opacity: 1; transform: translateY(0); }
+            85% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-20px); }
+        }
+
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="theme-switch" title="Переключить тему">
@@ -16,21 +440,20 @@
 
     <div class="container">
         <header>
-            <h1>🎯 Визуализатор операций над множествами</h1>
+            <h1>🎯 Учебный визуализатор множеств</h1>
         </header>
 
         <div class="main-content">
-            <!-- Левая панель - управление -->
             <div class="control-panel">
                 <div class="section">
-                    <h2>📋 Создание множеств</h2>
+                    <h2>📋 Создание множества</h2>
                     <div class="input-group">
                         <label for="setName">Имя множества:</label>
                         <input type="text" id="setName" value="A" maxlength="1" pattern="[A-Za-z]">
                     </div>
                     <div class="input-group">
-                        <label for="setElements">Элементы (через запятую):</label>
-                        <input type="text" id="setElements" placeholder="1, 2, 3, 4, 5">
+                        <label for="setElements">Элементы (числа через запятую):</label>
+                        <input type="text" id="setElements" placeholder="1, 2, 3">
                     </div>
                     <button id="addSetBtn" class="btn primary">➕ Добавить множество</button>
                     <button id="randomSetBtn" class="btn secondary">🎲 Случайное множество</button>
@@ -38,97 +461,56 @@
 
                 <div class="section">
                     <h2>⚡ Операции</h2>
-                    
-                    <!-- Выбор множеств для операций -->
                     <div class="input-group">
                         <label>Выберите множества для операций:</label>
-                        <div id="operationSets" class="sets-checkboxes">
-                            <!-- Чекбоксы будут добавляться динамически -->
-                        </div>
+                        <div id="operationSets" class="sets-checkboxes"></div>
                     </div>
 
                     <div class="operations">
-                        <button id="intersectionBtn" class="btn secondary">🔻 Пересечение</button>
-                        <button id="unionBtn" class="btn secondary">🔺 Объединение</button>
+                        <button id="intersectionBtn" class="btn secondary">🔻 Пересечение (∩)</button>
+                        <button id="unionBtn" class="btn secondary">🔺 Объединение (∪)</button>
                     </div>
 
-                    <!-- Разность множеств -->
-                    <div class="input-group">
+                    <div class="input-group" style="margin-top: 15px;">
                         <label>Разность множеств:</label>
                         <div class="difference-controls">
-                            <select id="differenceSetA">
-                                <option value="">Выберите множество A</option>
-                            </select>
+                            <select id="differenceSetA"><option value="">Выберите A</option></select>
                             <span class="difference-symbol">\</span>
-                            <select id="differenceSetB">
-                                <option value="">Выберите множество B</option>
-                            </select>
+                            <select id="differenceSetB"><option value="">Выберите B</option></select>
                         </div>
                         <button id="differenceBtn" class="btn secondary">➖ Вычислить разность</button>
                     </div>
 
-                    <!-- Симметрическая разность -->
                     <div class="input-group">
                         <label>Симметрическая разность:</label>
                         <div class="difference-controls">
-                            <select id="symmetricSetA">
-                                <option value="">Выберите множество A</option>
-                            </select>
+                            <select id="symmetricSetA"><option value="">Выберите A</option></select>
                             <span class="difference-symbol">△</span>
-                            <select id="symmetricSetB">
-                                <option value="">Выберите множество B</option>
-                            </select>
+                            <select id="symmetricSetB"><option value="">Выберите B</option></select>
                         </div>
-                        <button id="symmetricBtn" class="btn secondary">🔷 Симметрическая разность</button>
+                        <button id="symmetricBtn" class="btn secondary">🔷 Вычислить симметрическую</button>
                     </div>
 
                     <button id="clearBtn" class="btn danger">🗑️ Очистить все</button>
                 </div>
 
                 <div class="section">
-                    <h2>📊 Созданные множества</h2>
-                    <div id="setsList" class="sets-list">
-                        <!-- Сюда будут добавляться созданные множества -->
-                    </div>
+                    <h2>📊 Список множеств</h2>
+                    <div id="setsList" class="sets-list"></div>
                 </div>
             </div>
 
-            <!-- Правая панель - визуализация -->
             <div class="visualization-panel">
                 <div class="canvas-container">
                     <canvas id="vennCanvas" width="800" height="600"></canvas>
                     <div id="canvasMessage" class="canvas-message">
-                        <h3>Добро пожаловать в визуализатор множеств! 🎯</h3>
-                        <p>Создайте множества слева, чтобы начать работу</p>
-                        <div class="sets-info">
-                            <h4>Как использовать:</h4>
-                            <div class="sets-info-item">
-                                <span>1. Введите имя множества (A, B, C...)</span>
-                            </div>
-                            <div class="sets-info-item">
-                                <span>2. Добавьте элементы через запятую</span>
-                            </div>
-                            <div class="sets-info-item">
-                                <span>3. Нажмите "Добавить множество"</span>
-                            </div>
-                            <div class="sets-info-item">
-                                <span>4. Выберите операцию для визуализации</span>
-                            </div>
-                            <div class="sets-info-item">
-                                <span>💡 <strong>Автоматическая расстановка</strong> кругов в зависимости от отношений между множествами</span>
-                            </div>
-                        </div>
+                        <h3>Добро пожаловать! 🎯</h3>
+                        <p>Создайте множества слева, чтобы построить диаграмму Эйлера</p>
                     </div>
                 </div>
                 
-                <!-- Элемент для отображения формулы -->
-                <div id="formulaDisplay" class="formula-display">
-                    <!-- LaTeX формулы будут отображаться здесь -->
-                </div>
-                
-                <div id="relationshipInfo" class="relationship-info">
-                    <!-- Сюда будет выводиться информация об отношениях между множествами -->
-                </div>
+                <div id="formulaDisplay" class="formula-display"></div>
+                <div id="relationshipInfo" class="relationship-info"></div>
                 
                 <div id="result" class="result-section">
                     <h3>Результат операции:</h3>
@@ -137,25 +519,656 @@
                     </div>
                 </div>
                 
-                <!-- Информация об элементах -->
                 <div id="elementInfo" class="element-info">
                     <h4>Информация об элементах:</h4>
-                    <div id="elementList" class="element-list">
-                        <!-- Список элементов будет здесь -->
-                    </div>
+                    <div id="elementList" class="element-list"></div>
                 </div>
             </div>
         </div>
         
-        <!-- Модальное окно для загрузки файла -->
-        <input type="file" id="fileLoader" accept=".json" style="display: none;">
-        
-        <!-- Уведомления -->
         <div id="notificationContainer" style="position: fixed; top: 80px; right: 20px; z-index: 2000;"></div>
     </div>
 
-    <!-- Подключение GSAP для анимаций -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="script.js"></script>
+    <script>
+        class SetVisualizer {
+            constructor() {
+                this.sets = new Map();
+                this.selectedSets = new Set();
+                this.showLabels = true;
+                this.isDarkTheme = false;
+                this.colors = [
+                    '#FF6B6B80', '#4ECDC480', '#45B7D180', '#96CEB480', '#FFEAA780',
+                    '#DDA0DD80', '#98D8C880', '#F7DC6F80', '#BB8FCE80', '#85C1E980'
+                ];
+                this.originalColors = [
+                    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+                    '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9'
+                ];
+                this.canvas = document.getElementById('vennCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.circlePositions = new Map();
+                this.init();
+            }
+
+            init() {
+                this.setupEventListeners();
+                this.setupCanvas();
+                this.setupTheme();
+                this.updateCanvasDataAttribute();
+            }
+
+            setupCanvas() {
+                this.canvas.width = 800;
+                this.canvas.height = 600;
+            }
+
+            setupEventListeners() {
+                document.getElementById('addSetBtn').addEventListener('click', () => this.addSet());
+                document.getElementById('randomSetBtn').addEventListener('click', () => this.generateRandomSet());
+                document.getElementById('intersectionBtn').addEventListener('click', () => this.calculateIntersection());
+                document.getElementById('unionBtn').addEventListener('click', () => this.calculateUnion());
+                document.getElementById('differenceBtn').addEventListener('click', () => this.calculateDifference());
+                document.getElementById('symmetricBtn').addEventListener('click', () => this.calculateSymmetricDifference());
+                document.getElementById('clearBtn').addEventListener('click', () => this.clearAll());
+
+                const setElementsInput = document.getElementById('setElements');
+                setElementsInput.addEventListener('input', (e) => {
+                    e.target.value = e.target.value.replace(/[^0-9,]/g, '');
+                });
+
+                setElementsInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.addSet();
+                });
+
+                document.getElementById('operationSets').addEventListener('change', () => {
+                    this.updateSelectedSets();
+                    this.visualizeSets();
+                });
+
+                document.querySelector('.theme-switch').addEventListener('click', () => this.toggleTheme());
+            }
+
+            setupTheme() {
+                if (localStorage.getItem('venn-theme') === 'dark') {
+                    this.toggleTheme();
+                }
+            }
+
+            addSet() {
+                const name = document.getElementById('setName').value.trim().toUpperCase();
+                const elementsInput = document.getElementById('setElements').value.trim();
+
+                if (!name || !elementsInput) {
+                    alert('Введите имя множества и элементы (числа через запятую)');
+                    return;
+                }
+
+                if (!/^[A-Z]$/.test(name)) {
+                    alert('Имя множества должно быть буквой A-Z');
+                    return;
+                }
+
+                if (this.sets.has(name)) {
+                    alert(`Множество ${name} уже существует!`);
+                    return;
+                }
+
+                const rawElements = elementsInput.split(',')
+                    .map(el => el.trim())
+                    .filter(el => el !== '')
+                    .map(Number);
+
+                const uniqueElements = [...new Set(rawElements)];
+                const hasDuplicates = rawElements.length !== uniqueElements.length;
+
+                const colorIndex = this.sets.size % this.colors.length;
+                this.sets.set(name, {
+                    name: name,
+                    elements: uniqueElements,
+                    color: this.colors[colorIndex],
+                    originalColor: this.originalColors[colorIndex]
+                });
+
+                this.updateUI();
+                document.getElementById('setElements').value = '';
+                
+                const nextChar = String.fromCharCode(name.charCodeAt(0) + 1);
+                if (nextChar <= 'Z') document.getElementById('setName').value = nextChar;
+
+                this.updateCanvasDataAttribute();
+
+                if (hasDuplicates) {
+                    this.showNotification(`Дубликаты отсечены. Множество ${name}: {${uniqueElements.join(', ')}}`);
+                } else {
+                    this.showNotification(`Множество ${name} добавлено`);
+                }
+
+                if (this.sets.size >= 4) {
+                    this.showNotification(
+                        `⚠️ Внимание! Пересечения 4+ множеств рассчитываются симуляцией графа.`,
+                        'warning'
+                    );
+                }
+            }
+
+            generateRandomSet() {
+                const name = document.getElementById('setName').value.trim().toUpperCase() || 'A';
+                const count = Math.floor(Math.random() * 5) + 2;
+                const elements = Array.from({length: count}, () => Math.floor(Math.random() * 12) + 1);
+                document.getElementById('setElements').value = elements.join(', ');
+                this.addSet();
+            }
+
+            updateUI() {
+                this.updateSetsList();
+                this.updateOperationSets();
+                this.updateDifferenceControls();
+                this.updateSelectedSets();
+                this.visualizeSets();
+                this.updateRelationshipInfo();
+                this.updateElementInfo();
+            }
+
+            updateSetsList() {
+                const setsList = document.getElementById('setsList');
+                setsList.innerHTML = '';
+                this.sets.forEach((setData, setName) => {
+                    const setItem = document.createElement('div');
+                    setItem.className = 'set-item';
+                    setItem.innerHTML = `
+                        <div>
+                            <span class="set-name">${setData.name}</span>
+                            <div class="set-elements">{${setData.elements.join(', ')}}</div>
+                        </div>
+                        <button class="delete-set" onclick="visualizer.deleteSet('${setName}')">×</button>
+                    `;
+                    setsList.appendChild(setItem);
+                });
+            }
+
+            updateOperationSets() {
+                const operationSets = document.getElementById('operationSets');
+                operationSets.innerHTML = '';
+                this.sets.forEach((setData, setName) => {
+                    const checkbox = document.createElement('div');
+                    checkbox.className = 'set-checkbox';
+                    checkbox.innerHTML = `
+                        <input type="checkbox" id="set-${setName}" value="${setName}" ${this.selectedSets.has(setName) ? 'checked' : ''}>
+                        <label for="set-${setName}">
+                            <span class="set-color-indicator" style="background: ${setData.originalColor}"></span>
+                            ${setData.name} {${setData.elements.join(', ')}}
+                        </label>
+                    `;
+                    operationSets.appendChild(checkbox);
+                });
+            }
+
+            updateDifferenceControls() {
+                const updateSelect = (id) => {
+                    const select = document.getElementById(id);
+                    const val = select.value;
+                    select.innerHTML = '<option value="">Выберите множество</option>';
+                    this.sets.forEach((data, name) => {
+                        const opt = document.createElement('option');
+                        opt.value = name;
+                        opt.textContent = `${name} {${data.elements.join(', ')}}`;
+                        if (name === val) opt.selected = true;
+                        select.appendChild(opt);
+                    });
+                };
+                ['differenceSetA', 'differenceSetB', 'symmetricSetA', 'symmetricSetB'].forEach(updateSelect);
+            }
+
+            updateSelectedSets() {
+                this.selectedSets.clear();
+                document.querySelectorAll('#operationSets input[type="checkbox"]:checked')
+                    .forEach(cb => this.selectedSets.add(cb.value));
+            }
+
+            updateCanvasDataAttribute() {
+                this.canvas.setAttribute('data-has-sets', this.sets.size > 0);
+            }
+
+            deleteSet(setName) {
+                this.sets.delete(setName);
+                this.selectedSets.delete(setName);
+                this.circlePositions.delete(setName);
+                this.updateUI();
+                this.clearResult();
+                this.updateCanvasDataAttribute();
+            }
+
+            // УНИВЕРСАЛЬНЫЙ СИЛОВОЙ МЕТОД РАСРАСПОЛОЖЕНИЯ КРУГОВ (FORCE-DIRECTED LAYOUT)
+            calculateCirclePositions() {
+                const setsArray = Array.from(this.sets.values());
+                const n = setsArray.length;
+                if (n === 0) return;
+
+                const centerX = this.canvas.width / 2;
+                const centerY = this.canvas.height / 2;
+
+                // 1. Определение радиусов на основе вложенности (подмножеств)
+                const baseR = 120;
+                const radii = new Map();
+
+                setsArray.forEach(setA => {
+                    let radius = baseR;
+                    setsArray.forEach(setB => {
+                        if (setA.name !== setB.name && this.isSubset(setA, setB) && !this.isSubset(setB, setA)) {
+                            // Если A ⊂ B, то A создается меньшим по размеру
+                            radius = Math.min(radius, baseR * 0.55);
+                        }
+                    });
+                    radii.set(setA.name, radius);
+                });
+
+                // 2. Первоначальное расположение по кругу
+                const nodes = setsArray.map((s, index) => {
+                    const angle = (index * 2 * Math.PI) / n - Math.PI / 2;
+                    const r = radii.get(s.name);
+                    const initDist = n > 1 ? 130 : 0;
+                    return {
+                        name: s.name,
+                        x: centerX + Math.cos(angle) * initDist,
+                        y: centerY + Math.sin(angle) * initDist,
+                        r: r,
+                        vx: 0,
+                        vy: 0
+                    };
+                });
+
+                // 3. Физическая симуляция взаимодействия
+                const iterations = 120;
+                for (let iter = 0; iter < iterations; iter++) {
+                    for (let i = 0; i < nodes.length; i++) {
+                        for (let j = i + 1; j < nodes.length; j++) {
+                            const nodeA = nodes[i];
+                            const nodeB = nodes[j];
+                            const setA = this.sets.get(nodeA.name);
+                            const setB = this.sets.get(nodeB.name);
+
+                            let dx = nodeB.x - nodeA.x;
+                            let dy = nodeB.y - nodeA.y;
+                            let dist = Math.hypot(dx, dy) || 0.01;
+                            const ux = dx / dist;
+                            const uy = dy / dist;
+
+                            const inter = this.getIntersection(setA, setB);
+                            const isAsubB = this.isSubset(setA, setB);
+                            const isBsubA = this.isSubset(setB, setA);
+
+                            let targetDist = 0;
+
+                            if (isAsubB || isBsubA) {
+                                // ПОДМНОЖЕСТВО: центры стремятся к единой точке
+                                targetDist = 0;
+                            } else if (inter.size > 0) {
+                                // ПЕРЕСЕЧЕНИЕ: вычисляем расстояние перекрытия
+                                const minRadius = Math.min(nodeA.r, nodeB.r);
+                                targetDist = nodeA.r + nodeB.r - minRadius * 0.7;
+                            } else {
+                                // НЕТ ОБЩИХ ЭЛЕМЕНТОВ: круги должны полностью разойтись
+                                targetDist = nodeA.r + nodeB.r + 40;
+                            }
+
+                            // Силовое смещение
+                            const force = (dist - targetDist) * 0.1;
+                            nodeA.vx += ux * force;
+                            nodeA.vy += uy * force;
+                            nodeB.vx -= ux * force;
+                            nodeB.vy -= uy * force;
+                        }
+                    }
+
+                    // Применение скоростей и удержание около центра холста
+                    nodes.forEach(node => {
+                        node.x += node.vx * 0.5;
+                        node.y += node.vy * 0.5;
+                        node.vx *= 0.5; // затухание
+                        node.vy *= 0.5;
+
+                        // Центростремительная сила
+                        node.x += (centerX - node.x) * 0.02;
+                        node.y += (centerY - node.y) * 0.02;
+                    });
+                }
+
+                // Запись итоговых координат
+                this.circlePositions.clear();
+                nodes.forEach(node => {
+                    this.circlePositions.set(node.name, { x: node.x, y: node.y, r: node.r });
+                });
+            }
+
+            getIntersection(setA, setB) {
+                return new Set(setA.elements.filter(x => setB.elements.includes(x)));
+            }
+
+            isSubset(setA, setB) {
+                if (setA.elements.length === 0) return false;
+                return setA.elements.every(x => setB.elements.includes(x));
+            }
+
+            drawCircle(setData, highlight = false) {
+                const pos = this.circlePositions.get(setData.name);
+                if (!pos) return;
+
+                this.ctx.beginPath();
+                this.ctx.arc(pos.x, pos.y, pos.r, 0, 2 * Math.PI);
+
+                if (highlight) {
+                    this.ctx.fillStyle = setData.originalColor + 'A0';
+                    this.ctx.strokeStyle = '#FFD700';
+                    this.ctx.lineWidth = 4;
+                } else {
+                    this.ctx.fillStyle = setData.color;
+                    this.ctx.strokeStyle = setData.originalColor;
+                    this.ctx.lineWidth = 3;
+                }
+
+                this.ctx.fill();
+                this.ctx.stroke();
+
+                if (this.showLabels) {
+                    const isSmallCircle = pos.r < 45;
+                    const badgeRadius = isSmallCircle ? 10 : 15;
+                    const labelY = isSmallCircle ? pos.y - pos.r + 2 : pos.y - pos.r - 10;
+
+                    this.ctx.fillStyle = this.isDarkTheme ? '#1f2937' : '#ffffff';
+                    this.ctx.strokeStyle = setData.originalColor;
+                    this.ctx.lineWidth = 2;
+
+                    this.ctx.beginPath();
+                    this.ctx.arc(pos.x, labelY, badgeRadius, 0, 2 * Math.PI);
+                    this.ctx.fill();
+                    this.ctx.stroke();
+
+                    this.ctx.fillStyle = this.isDarkTheme ? '#ffffff' : '#111827';
+                    this.ctx.font = isSmallCircle ? 'bold 11px Arial' : 'bold 15px Arial';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.textBaseline = 'middle';
+                    this.ctx.fillText(setData.name, pos.x, labelY);
+                }
+            }
+
+            drawElementsOnCanvas() {
+                if (!this.showLabels || this.sets.size === 0) return;
+
+                const setsArray = Array.from(this.sets.values());
+                const elementRegions = new Map();
+
+                const allElements = new Set();
+                setsArray.forEach(s => s.elements.forEach(e => allElements.add(e)));
+
+                allElements.forEach(el => {
+                    const ownerSets = setsArray.filter(s => s.elements.includes(el)).map(s => s.name).sort().join('');
+                    if (!elementRegions.has(ownerSets)) {
+                        elementRegions.set(ownerSets, []);
+                    }
+                    elementRegions.get(ownerSets).push(el);
+                });
+
+                elementRegions.forEach((elements, regionKey) => {
+                    const targetPos = this.getRegionCoordinates(regionKey);
+                    if (!targetPos) return;
+
+                    this.ctx.fillStyle = this.isDarkTheme ? '#f3f4f6' : '#111827';
+                    this.ctx.font = 'bold 13px Arial';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.textBaseline = 'middle';
+
+                    elements.forEach((el, index) => {
+                        const row = Math.floor(index / 3);
+                        const col = index % 3;
+                        const offsetX = (col - 0.8) * 16;
+                        const offsetY = (row - 0.5) * 15;
+
+                        this.ctx.shadowColor = this.isDarkTheme ? 'rgba(0,0,0,0.9)' : 'rgba(255,255,255,0.95)';
+                        this.ctx.shadowBlur = 4;
+                        this.ctx.fillText(String(el), targetPos.x + offsetX, targetPos.y + offsetY);
+                        this.ctx.shadowBlur = 0;
+                    });
+                });
+            }
+
+            getRegionCoordinates(regionKey) {
+                const setsInRegion = regionKey.split('');
+                const positions = setsInRegion.map(name => this.circlePositions.get(name)).filter(Boolean);
+
+                if (positions.length === 0) return null;
+
+                const avgX = positions.reduce((sum, p) => sum + p.x, 0) / positions.length;
+                const avgY = positions.reduce((sum, p) => sum + p.y, 0) / positions.length;
+
+                return { x: avgX, y: avgY };
+            }
+
+            visualizeSets() {
+                this.clearCanvas();
+                if (this.sets.size === 0) return;
+
+                this.calculateCirclePositions();
+
+                this.sets.forEach(setData => {
+                    const isSelected = this.selectedSets.has(setData.name);
+                    this.drawCircle(setData, isSelected);
+                });
+
+                this.drawElementsOnCanvas();
+                this.drawLegend();
+            }
+
+            drawLegend() {
+                if (this.sets.size === 0) return;
+
+                const legendX = this.canvas.width - 140;
+                const legendY = 20;
+
+                this.ctx.fillStyle = this.isDarkTheme ? 'rgba(31, 41, 55, 0.95)' : 'rgba(255, 255, 255, 0.95)';
+                this.ctx.strokeStyle = this.isDarkTheme ? '#4b5563' : '#e5e7eb';
+                this.ctx.lineWidth = 1;
+
+                const boxHeight = this.sets.size * 22 + 30;
+                this.ctx.fillRect(legendX - 10, legendY - 10, 130, boxHeight);
+                this.ctx.strokeRect(legendX - 10, legendY - 10, 130, boxHeight);
+
+                this.ctx.fillStyle = this.isDarkTheme ? '#f3f4f6' : '#111827';
+                this.ctx.font = 'bold 13px Arial';
+                this.ctx.textAlign = 'left';
+                this.ctx.fillText('Легенда:', legendX, legendY + 5);
+
+                let yOffset = legendY + 25;
+                this.sets.forEach((setData) => {
+                    this.ctx.fillStyle = setData.originalColor;
+                    this.ctx.fillRect(legendX, yOffset - 9, 12, 12);
+
+                    this.ctx.fillStyle = this.isDarkTheme ? '#e5e7eb' : '#374151';
+                    this.ctx.font = '12px Arial';
+                    this.ctx.fillText(`${setData.name}: ${setData.elements.length} эл.`, legendX + 20, yOffset);
+
+                    yOffset += 22;
+                });
+            }
+
+            clearCanvas() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                this.ctx.fillStyle = this.isDarkTheme ? '#111827' : '#ffffff';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            }
+
+            calculateIntersection() {
+                if (this.selectedSets.size < 2) {
+                    alert('Выберите хотя бы 2 множества');
+                    return;
+                }
+
+                const selectedArray = Array.from(this.selectedSets).map(name => this.sets.get(name));
+                let intersection = new Set(selectedArray[0].elements);
+
+                for (let i = 1; i < selectedArray.length; i++) {
+                    intersection = new Set([...intersection].filter(x => selectedArray[i].elements.includes(x)));
+                }
+
+                this.displayResult(`Пересечение: ${selectedArray.map(s => s.name).join(' ∩ ')}`, intersection);
+                this.updateFormula(selectedArray.map(s => s.name).join(' \\cap '));
+            }
+
+            calculateUnion() {
+                if (this.selectedSets.size === 0) {
+                    alert('Выберите множества');
+                    return;
+                }
+
+                const selectedArray = Array.from(this.selectedSets).map(name => this.sets.get(name));
+                const union = new Set();
+                selectedArray.forEach(set => set.elements.forEach(el => union.add(el)));
+
+                this.displayResult(`Объединение: ${selectedArray.map(s => s.name).join(' ∪ ')}`, union);
+                this.updateFormula(selectedArray.map(s => s.name).join(' \\cup '));
+            }
+
+            calculateDifference() {
+                const setA = document.getElementById('differenceSetA').value;
+                const setB = document.getElementById('differenceSetB').value;
+
+                if (!setA || !setB) {
+                    alert('Выберите два множества');
+                    return;
+                }
+
+                const dataA = this.sets.get(setA);
+                const dataB = this.sets.get(setB);
+                const difference = new Set(dataA.elements.filter(x => !dataB.elements.includes(x)));
+
+                this.displayResult(`Разность: ${setA} \\ ${setB}`, difference);
+                this.updateFormula(`${setA} \\setminus ${setB}`);
+            }
+
+            calculateSymmetricDifference() {
+                const setA = document.getElementById('symmetricSetA').value;
+                const setB = document.getElementById('symmetricSetB').value;
+
+                if (!setA || !setB) {
+                    alert('Выберите два множества');
+                    return;
+                }
+
+                const dataA = this.sets.get(setA);
+                const dataB = this.sets.get(setB);
+
+                const diffAB = dataA.elements.filter(x => !dataB.elements.includes(x));
+                const diffBA = dataB.elements.filter(x => !dataA.elements.includes(x));
+                const symDiff = new Set([...diffAB, ...diffBA]);
+
+                this.displayResult(`Симметрическая разность: ${setA} △ ${setB}`, symDiff);
+                this.updateFormula(`${setA} \\triangle ${setB}`);
+            }
+
+            displayResult(title, resultSet) {
+                const resultContent = document.getElementById('resultContent');
+                const elements = Array.from(resultSet);
+                resultContent.innerHTML = `
+                    <h4>${title}</h4>
+                    <div class="result-set">{ ${elements.join(', ') || '∅'} }</div>
+                    <p style="margin-top: 8px;"><strong>Мощность множества:</strong> ${resultSet.size}</p>
+                `;
+            }
+
+            updateFormula(latex) {
+                const formulaDisplay = document.getElementById('formulaDisplay');
+                formulaDisplay.innerHTML = `\\(${latex}\\)`;
+                if (typeof katex !== 'undefined') {
+                    katex.render(latex, formulaDisplay, { throwOnError: false, displayMode: true });
+                }
+            }
+
+            updateRelationshipInfo() {
+                const relationshipInfo = document.getElementById('relationshipInfo');
+                if (this.sets.size < 2) {
+                    relationshipInfo.innerHTML = '';
+                    return;
+                }
+
+                const setsArray = Array.from(this.sets.values());
+                if (this.sets.size === 2) {
+                    const [A, B] = setsArray;
+                    const inter = this.getIntersection(A, B);
+                    const isAsubB = this.isSubset(A, B);
+                    const isBsubA = this.isSubset(B, A);
+
+                    if (inter.size === 0) {
+                        relationshipInfo.innerHTML = `<h4>${A.name} ∩ ${B.name} = ∅</h4><p>Множества не имеют общих элементов</p>`;
+                    } else if (isAsubB && isBsubA) {
+                        relationshipInfo.innerHTML = `<h4>${A.name} = ${B.name}</h4><p>Множества полностью равны</p>`;
+                    } else if (isAsubB) {
+                        relationshipInfo.innerHTML = `<h4>${A.name} ⊆ ${B.name}</h4><p>${A.name} целиком лежит внутри ${B.name}</p>`;
+                    } else if (isBsubA) {
+                        relationshipInfo.innerHTML = `<h4>${B.name} ⊆ ${A.name}</h4><p>${B.name} целиком лежит внутри ${A.name}</p>`;
+                    } else {
+                        relationshipInfo.innerHTML = `<h4>${A.name} ∩ ${B.name} ≠ ∅</h4><p>Множества имеют общие элементы</p>`;
+                    }
+                } else {
+                    relationshipInfo.innerHTML = `<h4>Создано множеств: ${this.sets.size}</h4>`;
+                }
+            }
+
+            updateElementInfo() {
+                const elementList = document.getElementById('elementList');
+                elementList.innerHTML = '';
+                const allElements = new Map();
+
+                this.sets.forEach(setData => {
+                    setData.elements.forEach(element => {
+                        if (!allElements.has(element)) allElements.set(element, []);
+                        allElements.get(element).push(setData.name);
+                    });
+                });
+
+                allElements.forEach((sets, element) => {
+                    const item = document.createElement('div');
+                    item.className = 'element-item';
+                    item.innerHTML = `<span><strong>${element}</strong></span><span>В множествах: ${sets.join(', ')}</span>`;
+                    elementList.appendChild(item);
+                });
+            }
+
+            toggleTheme() {
+                this.isDarkTheme = !this.isDarkTheme;
+                document.body.classList.toggle('dark-theme', this.isDarkTheme);
+                document.querySelector('.theme-icon').textContent = this.isDarkTheme ? '☀️' : '🌙';
+                localStorage.setItem('venn-theme', this.isDarkTheme ? 'dark' : 'light');
+                this.visualizeSets();
+            }
+
+            showNotification(message, type = 'info') {
+                const container = document.getElementById('notificationContainer');
+                const notification = document.createElement('div');
+                notification.className = `notification ${type === 'warning' ? 'warning' : ''}`;
+                notification.textContent = message;
+                container.appendChild(notification);
+                setTimeout(() => notification.remove(), 4000);
+            }
+
+            clearResult() {
+                document.getElementById('resultContent').innerHTML = '<p>Выберите операцию для отображения результата</p>';
+                document.getElementById('formulaDisplay').innerHTML = '';
+            }
+
+            clearAll() {
+                if (confirm('Очистить все множества?')) {
+                    this.sets.clear();
+                    this.selectedSets.clear();
+                    this.circlePositions.clear();
+                    this.updateUI();
+                    this.clearResult();
+                    this.updateCanvasDataAttribute();
+                    document.getElementById('setName').value = 'A';
+                    document.getElementById('setElements').value = '';
+                }
+            }
+        }
+
+        const visualizer = new SetVisualizer();
+    </script>
 </body>
 </html>

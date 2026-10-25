@@ -1,0 +1,1707 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Визуализатор операций над множествами</title>
+    <!-- Подключение KaTeX для рендеринга формул -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <style>
+*{margin:0;padding:0;box-sizing:border-box;border-radius:0}
+:root{--bg:#e9ecf0;--panel:#fff;--panel2:#f4f5f7;--line:#c4cad3;--text:#111827;--muted:#5b6472;--accent:#1d4ed8;--accent-t:#fff;--danger:#b42318}
+body.dark-theme{--bg:#0a0e14;--panel:#111827;--panel2:#0d1320;--line:#2b3544;--text:#e5e7eb;--muted:#9ca3af;--accent:#60a5fa;--accent-t:#0a0e14;--danger:#f87171}
+html,body{height:100%}
+body{font:14px/1.45 "Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);font-variant-numeric:tabular-nums}
+.container{height:100vh;display:flex;flex-direction:column;gap:8px;padding:8px}
+header{flex:none;display:flex;align-items:center;justify-content:space-between;height:48px;padding:0 16px;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent)}
+.brand{display:flex;align-items:baseline;gap:16px}
+header h1{font-size:16px;font-weight:600;letter-spacing:.02em}
+.sub{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+.theme-switch{display:flex;align-items:center;gap:10px;background:transparent;border:0;padding:0;color:var(--text);font:inherit;font-size:12px;text-transform:uppercase;letter-spacing:.08em;cursor:pointer}
+.theme-switch .track{position:relative;width:44px;height:22px;border:1px solid var(--line);background:var(--panel2);transition:background-color .25s,border-color .25s}
+.theme-switch .thumb{position:absolute;top:2px;left:2px;width:16px;height:16px;background:var(--muted);transition:transform .25s ease,background-color .25s}
+.theme-switch:hover .track{border-color:var(--accent)}
+.theme-switch:focus-visible .track{outline:2px solid var(--accent);outline-offset:2px}
+body.dark-theme .theme-switch .track{border-color:var(--accent)}
+body.dark-theme .theme-switch .thumb{transform:translateX(22px);background:var(--accent)}
+.main-content{flex:1;min-height:0;display:grid;grid-template-columns:340px minmax(0,1fr);gap:8px}
+.control-panel{overflow-y:auto;display:flex;flex-direction:column;gap:8px}
+.section{background:var(--panel);border:1px solid var(--line);padding:14px 16px}
+.section h2{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);padding-bottom:8px;margin-bottom:12px;border-bottom:1px solid var(--line)}
+.input-group{margin-bottom:12px}
+.input-group label{display:block;margin-bottom:4px;font-size:12px;color:var(--muted)}
+.input-group input,.input-group select{width:100%;padding:8px 10px;font:inherit;background:var(--panel2);color:var(--text);border:1px solid var(--line);outline:none}
+.input-group input:focus,.input-group select:focus{border-color:var(--accent)}
+.btn{display:block;width:100%;padding:9px 12px;margin-bottom:6px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--line);background:transparent;color:var(--text)}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-t)}
+.btn.primary:hover{opacity:.88;color:var(--accent-t)}
+.btn.danger{color:var(--danger);border-color:var(--danger);margin:12px 0 0}
+.btn.danger:hover{background:var(--danger);color:var(--panel)}
+.operations{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px}
+.operations .btn{margin:0}
+.difference-controls{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.difference-symbol{font-weight:600;color:var(--accent)}
+.sets-checkboxes,.sets-list{max-height:150px;overflow-y:auto;border:1px solid var(--line);background:var(--panel2);padding:6px 10px}
+.set-checkbox{display:flex;align-items:center;padding:3px 0}
+.set-checkbox input{margin-right:8px;accent-color:var(--accent)}
+.set-color-indicator{display:inline-block;width:12px;height:12px;margin-right:8px}
+.sets-list{padding:0}
+.set-item{display:flex;justify-content:space-between;align-items:center;padding:7px 10px;border-bottom:1px solid var(--line)}
+.set-item:last-child{border-bottom:0}
+.set-name{font-weight:700;color:var(--accent)}
+.set-elements{color:var(--muted);font-size:12px;font-family:Consolas,"Courier New",monospace}
+.delete-set{background:transparent;color:var(--danger);border:1px solid var(--danger);padding:1px 8px;cursor:pointer;font-size:12px}
+.delete-set:hover{background:var(--danger);color:var(--panel)}
+.visualization-panel{min-height:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:minmax(0,1fr) auto 190px;gap:8px}
+.canvas-container{grid-column:1/-1;position:relative;min-height:0;background:var(--panel);border:1px solid var(--line)}
+#vennCanvas{display:block;width:100%;height:100%;object-fit:contain}
+.canvas-message{display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);padding:24px 32px;text-align:center;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);color:var(--muted);z-index:10}
+.canvas-message h3{color:var(--text);margin-bottom:4px;font-size:15px}
+.canvas-container:not(:has(canvas[data-has-sets="true"])) .canvas-message{display:block}
+.formula-display{grid-column:span 2;display:flex;align-items:center;justify-content:center;min-height:56px;padding:8px 16px;font-size:18px;background:var(--panel);border:1px solid var(--line)}
+.relationship-info{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);padding:10px 16px;display:flex;flex-direction:column;justify-content:center}
+.relationship-info h4{font-size:14px}
+.relationship-info p{font-size:12px;color:var(--muted)}
+.result-section,.element-info{display:flex;flex-direction:column;min-height:0;background:var(--panel);border:1px solid var(--line);padding:12px 16px}
+.element-info{grid-column:span 2}
+.result-section h3,.element-info h4{flex:none;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);padding-bottom:6px;margin-bottom:8px;border-bottom:1px solid var(--line)}
+.result-content,.element-list{flex:1;min-height:0;overflow-y:auto;font-size:13px}
+.result-set{font-family:Consolas,"Courier New",monospace;background:var(--panel2);border:1px solid var(--line);padding:6px 10px;margin-top:6px;font-weight:600;color:var(--accent)}
+.element-item{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--line)}
+.element-item span:last-child{color:var(--muted)}
+.notification{background:var(--panel);color:var(--text);border:1px solid var(--line);border-left:4px solid var(--accent);padding:12px 18px;margin-bottom:8px;font-size:13px;animation:fadeInOut 4s ease forwards}
+.notification.warning{border-left-color:#d97706}
+@keyframes fadeInOut{0%{opacity:0}10%,85%{opacity:1}100%{opacity:0}}
+::view-transition-old(root),::view-transition-new(root){animation-duration:.45s;animation-timing-function:ease}
+.theme-fade,.theme-fade *{transition:background-color .35s ease,color .35s ease,border-color .35s ease!important}
+@media (prefers-reduced-motion:reduce){::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none!important}}
+.validity{position:absolute;left:12px;bottom:8px;font:12px Consolas,"Courier New",monospace;color:var(--muted)}
+.validity.bad{color:var(--danger)}
+.legend{display:none;position:absolute;right:12px;top:12px;min-width:140px;max-height:55%;overflow-y:auto;padding:8px 10px;font-size:12px;background:var(--panel);border:1px solid var(--line)}
+.lg-row{display:flex;align-items:center;gap:8px;padding:3px 0}
+.lg-sw{flex:none;width:16px;height:16px;border:2px solid var(--c);background:color-mix(in srgb,var(--c) 25%,transparent)}
+.lg-sw.dashed{border-style:dashed}
+.lg-e{color:var(--muted);font-size:11px}
+.lg-n{margin-left:auto;padding-left:10px;color:var(--muted);font-family:Consolas,"Courier New",monospace}
+.zoombar{position:absolute;right:12px;bottom:12px;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line)}
+.zoombar button{width:34px;height:30px;border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--text);font:inherit;font-size:14px;cursor:pointer}
+.zoombar button:last-child{border-bottom:0;font-size:11px}
+.zoombar button:hover{color:var(--accent)}
+.chk{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12px;color:var(--muted);cursor:pointer}
+.input-group .chk input{width:auto;padding:0;accent-color:var(--accent)}
+@media (max-width:1100px){
+.container{height:auto}.main-content{grid-template-columns:1fr}
+.visualization-panel{grid-template-rows:none;grid-template-columns:1fr}
+.canvas-container{height:60vw;min-height:320px}.formula-display,.element-info{grid-column:auto}.result-section,.element-info{height:180px}}
+</style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <div class="brand"><h1>Визуализатор операций над множествами</h1><span class="sub">Диаграммы Эйлера — Венна</span></div>
+            <button class="theme-switch" type="button" role="switch" aria-checked="false" aria-label="Тёмная тема"><span>Тёмная тема</span><span class="track"><span class="thumb"></span></span></button>
+        </header>
+
+        <div class="main-content">
+            <div class="control-panel">
+                <div class="section">
+                    <h2>Создание множества</h2>
+                    <div class="input-group">
+                        <label for="setName">Имя множества:</label>
+                        <input type="text" id="setName" value="A" maxlength="1" pattern="[A-Za-z]">
+                    </div>
+                    <div class="input-group">
+                        <label for="setElements">Элементы (числа через запятую):</label>
+                        <input type="text" id="setElements" placeholder="1, 2, 3">
+                    </div>
+                    <div class="input-group">
+                        <label for="universeInput">Универсум U (необязательно):</label>
+                        <input type="text" id="universeInput" placeholder="по умолчанию — объединение множеств">
+                        <label class="chk"><input type="checkbox" id="showUniverse"> Показывать границу универсума</label>
+                    </div>
+                    <button id="addSetBtn" class="btn primary">Добавить множество</button>
+                    <button id="randomSetBtn" class="btn secondary">Случайное множество</button>
+                </div>
+
+                <div class="section">
+                    <h2>Операции</h2>
+                    <div class="input-group">
+                        <label>Выберите множества для операций:</label>
+                        <div id="operationSets" class="sets-checkboxes"></div>
+                    </div>
+
+                    <div class="operations">
+                        <button id="intersectionBtn" class="btn secondary">Пересечение (∩)</button>
+                        <button id="unionBtn" class="btn secondary">Объединение (∪)</button>
+                    </div>
+
+                    <div class="input-group" style="margin-top: 15px;">
+                        <label>Разность множеств:</label>
+                        <div class="difference-controls">
+                            <select id="differenceSetA"><option value="">Выберите A</option></select>
+                            <span class="difference-symbol">\</span>
+                            <select id="differenceSetB"><option value="">Выберите B</option></select>
+                        </div>
+                        <button id="differenceBtn" class="btn secondary">Вычислить разность</button>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Симметрическая разность:</label>
+                        <div class="difference-controls">
+                            <select id="symmetricSetA"><option value="">Выберите A</option></select>
+                            <span class="difference-symbol">△</span>
+                            <select id="symmetricSetB"><option value="">Выберите B</option></select>
+                        </div>
+                        <button id="symmetricBtn" class="btn secondary">Вычислить симметрическую</button>
+                    </div>
+
+                    <button id="clearBtn" class="btn danger">Очистить все</button>
+                </div>
+
+                <div class="section">
+                    <h2>Список множеств</h2>
+                    <div id="setsList" class="sets-list"></div>
+                </div>
+            </div>
+
+            <div class="visualization-panel">
+                <div class="canvas-container">
+                    <canvas id="vennCanvas" width="800" height="600"></canvas>
+                <div class="validity" id="validity"></div>
+                <div class="legend" id="legend"></div>
+                <div class="zoombar"><button type="button" data-zoom="in" title="Приблизить">+</button><button type="button" data-zoom="out" title="Отдалить">−</button><button type="button" data-zoom="reset" title="Сбросить масштаб">1:1</button></div>
+                    <div id="canvasMessage" class="canvas-message">
+                        <h3>Добро пожаловать! </h3>
+                        <p>Создайте множества слева, чтобы построить диаграмму Эйлера</p>
+                    </div>
+                </div>
+                
+                <div id="formulaDisplay" class="formula-display"></div>
+                <div id="relationshipInfo" class="relationship-info"></div>
+                
+                <div id="result" class="result-section">
+                    <h3>Результат операции:</h3>
+                    <div id="resultContent" class="result-content">
+                        <p>Выберите операцию для отображения результата</p>
+                    </div>
+                </div>
+                
+                <div id="elementInfo" class="element-info">
+                    <h4>Информация об элементах:</h4>
+                    <div id="elementList" class="element-list"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="notificationContainer" style="position: fixed; top: 80px; right: 20px; z-index: 2000;"></div>
+    </div>
+
+    <script>
+        class SetVisualizer {
+            constructor() {
+                this.sets = new Map();
+                this.selectedSets = new Set();
+                this.showLabels = true;
+                this.isDarkTheme = false;
+                this.colors = ['#0072B240','#D55E0040','#E69F0040','#CC79A740','#009E7340','#7A4FBF40','#56B4E940','#8C564B40','#6B728040','#B8860B40'];
+                this.originalColors = ['#0072B2','#D55E00','#E69F00','#CC79A7','#009E73','#7A4FBF','#56B4E9','#8C564B','#6B7280','#B8860B'];
+                this.canvas = document.getElementById('vennCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.circlePositions = new Map();
+                this.init();
+            }
+
+            init() {
+                this.setupEventListeners();
+                this.setupCanvas();
+                document.getElementById('universeInput').addEventListener('change', () => this.visualizeSets());
+                document.getElementById('showUniverse').addEventListener('change', () => this.visualizeSets());
+                this.setupTheme();
+                this.updateCanvasDataAttribute();
+            }
+
+            setupCanvas() {
+                this.W = 800; this.H = 600; this.lastK = 0;
+                this.view = { s: 1, tx: 0, ty: 0 };
+                const cv = this.canvas;
+                cv.style.cursor = 'grab';
+                cv.addEventListener('wheel', e => {
+                    e.preventDefault();
+                    const r = cv.getBoundingClientRect();
+                    this.zoomAt(e.clientX - r.left, e.clientY - r.top, Math.exp(-e.deltaY * 0.0015));
+                }, { passive: false });
+                let drag = null;
+                cv.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY }; cv.setPointerCapture(e.pointerId); cv.style.cursor = 'grabbing'; });
+                cv.addEventListener('pointermove', e => {
+                    if (!drag) return;
+                    this.view.tx += e.clientX - drag.x; this.view.ty += e.clientY - drag.y;
+                    drag = { x: e.clientX, y: e.clientY };
+                    this.redraw();
+                });
+                const stop = () => { drag = null; cv.style.cursor = 'grab'; };
+                cv.addEventListener('pointerup', stop);
+                cv.addEventListener('pointercancel', stop);
+                cv.addEventListener('dblclick', () => this.resetView());
+                document.querySelectorAll('[data-zoom]').forEach(b => b.addEventListener('click', () => {
+                    const z = b.dataset.zoom;
+                    if (z === 'reset') this.resetView(); else this.zoomAt(this.W / 2, this.H / 2, z === 'in' ? 1.25 : 0.8);
+                }));
+                this.resizeCanvas();
+                if (window.ResizeObserver) new ResizeObserver(() => {
+                    clearTimeout(this.rt);
+                    this.rt = setTimeout(() => this.resizeCanvas(), 120);
+                }).observe(this.canvas.parentElement);
+            }
+
+            resizeCanvas() {
+                const box = this.canvas.parentElement;
+                const W = Math.max(480, box.clientWidth), H = Math.max(360, box.clientHeight), k = Math.min(3, window.devicePixelRatio || 1);
+                if (W === this.W && H === this.H && k === this.lastK) return;
+                this.W = W; this.H = H; this.lastK = k;
+                this.canvas.width = Math.round(W * k);
+                this.canvas.height = Math.round(H * k);
+                this.ctx.setTransform(k, 0, 0, k, 0, 0);
+                this.visualizeSets();
+            }
+
+
+            setupEventListeners() {
+                document.getElementById('addSetBtn').addEventListener('click', () => this.addSet());
+                document.getElementById('randomSetBtn').addEventListener('click', () => this.generateRandomSet());
+                document.getElementById('intersectionBtn').addEventListener('click', () => this.calculateIntersection());
+                document.getElementById('unionBtn').addEventListener('click', () => this.calculateUnion());
+                document.getElementById('differenceBtn').addEventListener('click', () => this.calculateDifference());
+                document.getElementById('symmetricBtn').addEventListener('click', () => this.calculateSymmetricDifference());
+                document.getElementById('clearBtn').addEventListener('click', () => this.clearAll());
+
+                const setElementsInput = document.getElementById('setElements');
+                setElementsInput.addEventListener('input', (e) => {
+                    e.target.value = e.target.value.replace(/[^0-9,]/g, '');
+                });
+
+                setElementsInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.addSet();
+                });
+
+                document.getElementById('operationSets').addEventListener('change', () => {
+                    this.updateSelectedSets();
+                    this.visualizeSets();
+                });
+
+                document.querySelector('.theme-switch').addEventListener('click', () => this.toggleTheme());
+            }
+
+            setupTheme() {
+                if (localStorage.getItem('venn-theme') === 'dark') {
+                    this.toggleTheme(false);
+                }
+            }
+
+            addSet() {
+                const name = document.getElementById('setName').value.trim().toUpperCase();
+                const elementsInput = document.getElementById('setElements').value.trim();
+
+                if (!name || !elementsInput) {
+                    alert('Введите имя множества и элементы (числа через запятую)');
+                    return;
+                }
+
+                if (!/^[A-Z]$/.test(name)) {
+                    alert('Имя множества должно быть буквой A-Z');
+                    return;
+                }
+
+                if (this.sets.has(name)) {
+                    alert(`Множество ${name} уже существует!`);
+                    return;
+                }
+
+                const rawElements = elementsInput.split(',')
+                    .map(el => el.trim())
+                    .filter(el => el !== '')
+                    .map(Number);
+
+                const uniqueElements = [...new Set(rawElements)];
+                const hasDuplicates = rawElements.length !== uniqueElements.length;
+
+                const colorIndex = this.sets.size % this.colors.length;
+                this.sets.set(name, {
+                    name: name,
+                    elements: uniqueElements,
+                    color: this.colors[colorIndex],
+                    originalColor: this.originalColors[colorIndex]
+                });
+
+                this.updateUI();
+                document.getElementById('setElements').value = '';
+                
+                const nextChar = String.fromCharCode(name.charCodeAt(0) + 1);
+                if (nextChar <= 'Z') document.getElementById('setName').value = nextChar;
+
+                this.updateCanvasDataAttribute();
+
+                if (hasDuplicates) {
+                    this.showNotification(`Дубликаты отсечены. Множество ${name}: {${uniqueElements.join(', ')}}`);
+                } else {
+                    this.showNotification(`Множество ${name} добавлено`);
+                }
+
+                if (this.sets.size >= 4) {
+                    this.showNotification(
+                        `Внимание! Пересечения 4+ множеств рассчитываются симуляцией графа.`,
+                        'warning'
+                    );
+                }
+            }
+
+            generateRandomSet() {
+                const name = document.getElementById('setName').value.trim().toUpperCase() || 'A';
+                const count = Math.floor(Math.random() * 5) + 2;
+                const elements = Array.from({length: count}, () => Math.floor(Math.random() * 12) + 1);
+                document.getElementById('setElements').value = elements.join(', ');
+                this.addSet();
+            }
+
+            updateUI() {
+                this.updateSetsList();
+                this.updateOperationSets();
+                this.updateDifferenceControls();
+                this.updateSelectedSets();
+                this.visualizeSets();
+                this.updateRelationshipInfo();
+                this.updateElementInfo();
+            }
+
+            updateSetsList() {
+                const setsList = document.getElementById('setsList');
+                setsList.innerHTML = '';
+                this.sets.forEach((setData, setName) => {
+                    const setItem = document.createElement('div');
+                    setItem.className = 'set-item';
+                    setItem.innerHTML = `
+                        <div>
+                            <span class="set-name">${setData.name}</span>
+                            <div class="set-elements">{${setData.elements.join(', ')}}</div>
+                        </div>
+                        <button class="delete-set" onclick="visualizer.deleteSet('${setName}')">×</button>
+                    `;
+                    setsList.appendChild(setItem);
+                });
+            }
+
+            updateOperationSets() {
+                const operationSets = document.getElementById('operationSets');
+                operationSets.innerHTML = '';
+                this.sets.forEach((setData, setName) => {
+                    const checkbox = document.createElement('div');
+                    checkbox.className = 'set-checkbox';
+                    checkbox.innerHTML = `
+                        <input type="checkbox" id="set-${setName}" value="${setName}" ${this.selectedSets.has(setName) ? 'checked' : ''}>
+                        <label for="set-${setName}">
+                            <span class="set-color-indicator" style="background: ${setData.originalColor}"></span>
+                            ${setData.name} {${setData.elements.join(', ')}}
+                        </label>
+                    `;
+                    operationSets.appendChild(checkbox);
+                });
+            }
+
+            updateDifferenceControls() {
+                const updateSelect = (id) => {
+                    const select = document.getElementById(id);
+                    const val = select.value;
+                    select.innerHTML = '<option value="">Выберите множество</option>';
+                    this.sets.forEach((data, name) => {
+                        const opt = document.createElement('option');
+                        opt.value = name;
+                        opt.textContent = `${name} {${data.elements.join(', ')}}`;
+                        if (name === val) opt.selected = true;
+                        select.appendChild(opt);
+                    });
+                };
+                ['differenceSetA', 'differenceSetB', 'symmetricSetA', 'symmetricSetB'].forEach(updateSelect);
+            }
+
+            updateSelectedSets() {
+                this.selectedSets.clear();
+                document.querySelectorAll('#operationSets input[type="checkbox"]:checked')
+                    .forEach(cb => this.selectedSets.add(cb.value));
+            }
+
+            updateCanvasDataAttribute() {
+                this.canvas.setAttribute('data-has-sets', this.sets.size > 0);
+            }
+
+            deleteSet(setName) {
+                this.sets.delete(setName);
+                this.selectedSets.delete(setName);
+                this.circlePositions.delete(setName);
+                this.updateUI();
+                this.clearResult();
+                this.updateCanvasDataAttribute();
+            }
+
+            // УНИВЕРСАЛЬНЫЙ СИЛОВОЙ МЕТОД РАСРАСПОЛОЖЕНИЯ КРУГОВ (FORCE-DIRECTED LAYOUT)
+                        legacyCirclePositions() {
+                const setsArray = Array.from(this.sets.values());
+                const n = setsArray.length;
+                if (n === 0) return;
+                const centerX = this.W / 2;
+                const centerY = this.H / 2;
+                this.circlePositions.clear();
+                
+                const baseR = n > 4 ? 90 : 120;
+                const radii = new Map();
+                setsArray.forEach(setA => {
+                    let radius = baseR;
+                    setsArray.forEach(setB => {
+                        if (setA.name !== setB.name && this.isSubset(setA, setB) && !this.isSubset(setB, setA)) {
+                            radius = Math.min(radius, baseR * 0.55);
+                        }
+                    });
+                    radii.set(setA.name, radius);
+                });
+                const nodes = setsArray.map((s, index) => {
+                    const angle = (index * 2 * Math.PI) / n - Math.PI / 2;
+                    const r = radii.get(s.name);
+                    const initDist = n > 1 ? (n > 4 ? 100 : 130) : 0;
+                    return {
+                        name: s.name,
+                        x: centerX + Math.cos(angle) * initDist,
+                        y: centerY + Math.sin(angle) * initDist,
+                        r: r,
+                        vx: 0,
+                        vy: 0
+                    };
+                });
+                const iterations = 120;
+                for (let iter = 0; iter < iterations; iter++) {
+                    for (let i = 0; i < nodes.length; i++) {
+                        for (let j = i + 1; j < nodes.length; j++) {
+                            const nodeA = nodes[i];
+                            const nodeB = nodes[j];
+                            const setA = this.sets.get(nodeA.name);
+                            const setB = this.sets.get(nodeB.name);
+                            let dx = nodeB.x - nodeA.x;
+                            let dy = nodeB.y - nodeA.y;
+                            let dist = Math.hypot(dx, dy) || 0.01;
+                            const ux = dx / dist;
+                            const uy = dy / dist;
+                            const inter = this.getIntersection(setA, setB);
+                            const isAsubB = this.isSubset(setA, setB);
+                            const isBsubA = this.isSubset(setB, setA);
+                            let targetDist = 0;
+                            let forceFactor = 0.1;
+                            if (isAsubB || isBsubA) {
+                                targetDist = 0;
+                            } else if (inter.size > 0) {
+                                const minRadius = Math.min(nodeA.r, nodeB.r);
+                                targetDist = nodeA.r + nodeB.r - minRadius * 0.7;
+                            } else {
+                                targetDist = nodeA.r + nodeB.r + 70;
+                                if (dist < nodeA.r + nodeB.r) {
+                                    forceFactor = 0.35;
+                                }
+                            }
+                            const force = (dist - targetDist) * forceFactor;
+                            nodeA.vx += ux * force;
+                            nodeA.vy += uy * force;
+                            nodeB.vx -= ux * force;
+                            nodeB.vy -= uy * force;
+                        }
+                    }
+                    nodes.forEach(node => {
+                        node.x += node.vx * 0.5;
+                        node.y += node.vy * 0.5;
+                        node.vx *= 0.5;
+                        node.vy *= 0.5;
+                        node.x += (centerX - node.x) * 0.02;
+                        node.y += (centerY - node.y) * 0.02;
+                    });
+                }
+                nodes.forEach(node => {
+                    this.circlePositions.set(node.name, {
+                        x: node.x,
+                        y: node.y,
+                        r: node.r,
+                        isEllipse: false
+                    });
+                });
+            }
+            getIntersection(setA, setB) {
+                return new Set(setA.elements.filter(x => setB.elements.includes(x)));
+            }
+            isSubset(setA, setB) {
+                if (setA.elements.length === 0) return false;
+                return setA.elements.every(x => setB.elements.includes(x));
+            }
+frame() { const M = 28; return { x: M, y: M, w: this.W - 2 * M, h: this.H - 2 * M }; }
+
+            inFrame(x, y) { const f = this.ubox(); return x >= f.x && x <= f.x + f.w && y >= f.y && y <= f.y + f.h; }
+
+            setTrig(s) { s[5] = Math.cos(s[4]); s[6] = Math.sin(s[4]); }
+
+            insideShape(s, x, y) {
+                if (s.field) return s.field(x, y) < 0;
+                const dx = x - s[0], dy = y - s[1];
+                const u = dx * s[5] + dy * s[6], v = -dx * s[6] + dy * s[5];
+                return (u * u) / (s[2] * s[2]) + (v * v) / (s[3] * s[3]) <= 1;
+            }
+
+            buildModel() {
+                const all = Array.from(this.sets.values()).filter(s => s.elements.length > 0);
+                const groups = [];
+                all.forEach(s => {
+                    const key = s.elements.slice().sort((a, b) => a - b).join(',');
+                    let g = groups.find(x => x.key === key);
+                    if (!g) groups.push(g = { key, names: [], elements: s.elements });
+                    g.names.push(s.name);
+                });
+                const everyEl = Array.from(new Set(all.flatMap(s => s.elements)));
+                const derivable = (X, nb) => {
+                    const cls = new Map();
+                    for (const e of everyEl) {
+                        let z = 0;
+                        nb.forEach((g, i) => { if (g.elements.includes(e)) z |= 1 << i; });
+                        const c = cls.get(z) || { y: false, n: false };
+                        if (X.elements.includes(e)) c.y = true; else c.n = true;
+                        cls.set(z, c);
+                    }
+                    const masks = [];
+                    for (const [z, c] of cls) { if (c.y && (c.n || z === 0)) return null; if (c.y) masks.push(z); }
+                    return masks;
+                };
+                let base = groups.slice();
+                const dvs = [];
+                groups.slice().sort((a, b) => a.elements.length - b.elements.length).forEach(g => {
+                    if (base.length < 3) return;
+                    const nb = base.filter(x => x !== g);
+                    if (dvs.concat([g]).every(x => derivable(x, nb))) { base = nb; dvs.push(g); }
+                });
+                const derived = new Map();
+                const sameEls = (list, X) => list.length === X.elements.length && list.slice().sort((a, b) => a - b).join(',') === X.key;
+                const exprOf = (X, masks) => {
+                    const one = M => {
+                        const ins = [], outs = [];
+                        base.forEach((g, i) => ((M >> i) & 1 ? ins : outs).push(i));
+                        let keep = outs.slice();
+                        if (masks.length === 1) outs.forEach(o => {
+                            const rest = keep.filter(k => k !== o);
+                            if (sameEls(everyEl.filter(e => ins.every(i => base[i].elements.includes(e)) && rest.every(i => !base[i].elements.includes(e))), X)) keep = rest;
+                        });
+                        const nm = i => base[i].names[0];
+                        return ins.map(nm).join(' ∩ ') + (keep.length ? ' \\ ' + (keep.length > 1 ? '(' + keep.map(nm).join(' ∪ ') + ')' : nm(keep[0])) : '');
+                    };
+                    if (masks.length === (1 << base.length) - 1) return base.map(g => g.names[0]).join(' ∪ ');
+                    return masks.length === 1 ? one(masks[0]) : masks.map(M => '(' + one(M) + ')').join(' ∪ ');
+                };
+                dvs.forEach(x => { const masks = derivable(x, base), expr = exprOf(x, masks); x.names.forEach(n => derived.set(n, { masks, expr })); });
+                const zones = new Map(), inSets = new Set(all.flatMap(s => s.elements));
+                inSets.forEach(el => {
+                    let z = 0;
+                    base.forEach((g, i) => { if (g.elements.includes(el)) z |= 1 << i; });
+                    zones.set(z, (zones.get(z) || 0) + 1);
+                });
+                const field = document.getElementById('universeInput');
+                const u = (field ? field.value : '').split(',').map(x => x.trim()).filter(Boolean).map(Number).filter(Number.isFinite);
+                return { groups: base, derived, zones, outside: Array.from(new Set(u.filter(e => !inSets.has(e)))) };
+            }
+
+            validate(shapes, model, strict) {
+                const G = 5, F = this.frame(), cols = Math.floor(F.w / G), rows = Math.floor(F.h / G), N = cols * rows;
+                const masks = new Int32Array(N), counts = new Map();
+                for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+                    let mk = 0;
+                    const x = F.x + (i + 0.5) * G, y = F.y + (j + 0.5) * G;
+                    shapes.forEach((s, t) => { if (this.insideShape(s, x, y)) mk |= 1 << t; });
+                    masks[j * cols + i] = mk;
+                    counts.set(mk, (counts.get(mk) || 0) + 1);
+                }
+                const missing = [], extra = [], split = [];
+                model.zones.forEach((c, z) => { if (!counts.get(z)) missing.push(z); });
+                counts.forEach((a, z) => { if (z && !model.zones.has(z)) extra.push(z); });
+                const seen = new Uint8Array(N), comps = new Map();
+                for (let n = 0; n < N; n++) {
+                    if (seen[n] || !masks[n]) continue;
+                    const z = masks[n], st = [n];
+                    let size = 0;
+                    seen[n] = 1;
+                    while (st.length) {
+                        const c = st.pop(), i = c % cols, j = (c / cols) | 0;
+                        size++;
+                        [[i - 1, j], [i + 1, j], [i, j - 1], [i, j + 1]].forEach(([a, b]) => {
+                            if (a < 0 || b < 0 || a >= cols || b >= rows) return;
+                            const q = b * cols + a;
+                            if (!seen[q] && masks[q] === z) { seen[q] = 1; st.push(q); }
+                        });
+                    }
+                    if (size >= 3) comps.set(z, (comps.get(z) || 0) + 1);
+                }
+                comps.forEach((k, z) => { if (k > 1) split.push(z); });
+                const splitSets = [];
+                for (let t = 0; t < shapes.length; t++) {
+                    const seen2 = new Uint8Array(N);
+                    let parts = 0;
+                    for (let n = 0; n < N; n++) {
+                        if (seen2[n] || !((masks[n] >> t) & 1)) continue;
+                        const st = [n];
+                        let size = 0;
+                        seen2[n] = 1;
+                        while (st.length) {
+                            const c = st.pop(), i = c % cols, j = (c / cols) | 0;
+                            size++;
+                            [[i - 1, j], [i + 1, j], [i, j - 1], [i, j + 1]].forEach(([a, b]) => {
+                                if (a < 0 || b < 0 || a >= cols || b >= rows) return;
+                                const q = b * cols + a;
+                                if (!seen2[q] && ((masks[q] >> t) & 1)) { seen2[q] = 1; st.push(q); }
+                            });
+                        }
+                        if (size >= 3) parts++;
+                    }
+                    if (parts > 1) splitSets.push(t);
+                    else if (strict) {
+                        const er = new Uint8Array(N);
+                        for (let j = 2; j < rows - 2; j++) for (let i = 2; i < cols - 2; i++) {
+                            let all = true;
+                            for (let dj = -2; dj <= 2 && all; dj++) for (let di = -2; di <= 2; di++) if (!((masks[(j + dj) * cols + i + di] >> t) & 1)) { all = false; break; }
+                            er[j * cols + i] = all ? 1 : 0;
+                        }
+                        const sn = new Uint8Array(N);
+                        let ep = 0;
+                        for (let n0 = 0; n0 < N; n0++) {
+                            if (sn[n0] || !er[n0]) continue;
+                            ep++;
+                            const st = [n0];
+                            sn[n0] = 1;
+                            while (st.length) {
+                                const c = st.pop(), i = c % cols, j = (c / cols) | 0;
+                                [[i - 1, j], [i + 1, j], [i, j - 1], [i, j + 1]].forEach(([a, b]) => {
+                                    if (a < 0 || b < 0 || a >= cols || b >= rows) return;
+                                    const q = b * cols + a;
+                                    if (!sn[q] && er[q]) { sn[q] = 1; st.push(q); }
+                                });
+                            }
+                        }
+                        if (ep > 1) splitSets.push(t);
+                    }
+                }
+                let tot = 0, area = 0, maxErr = 0;
+                model.zones.forEach((c, z) => { tot += c; area += counts.get(z) || 0; });
+                model.zones.forEach((c, z) => {
+                    const exp = c / tot, got = (counts.get(z) || 0) / (area || 1);
+                    maxErr = Math.max(maxErr, Math.abs(got - exp) / exp);
+                });
+                return { ok: !missing.length && !extra.length && !split.length && !splitSets.length, missing, extra, split, splitSets, maxErr: maxErr * 100 };
+            }
+
+            drawUnion(pos, c, hl) {
+                if (pos.region) return this.drawRegion(pos, c, hl);
+                const ctx = this.ctx, dark = this.isDarkTheme, seg = 7, co = pos.core;
+                ctx.beginPath();
+                pos.loops.forEach(l => {
+                    ctx.moveTo(l[0][0], l[0][1]);
+                    for (let i = 1; i < l.length; i++) ctx.lineTo(l[i][0], l[i][1]);
+                    ctx.closePath();
+                });
+                ctx.fillStyle = this.hexA(c, hl ? (dark ? 0.42 : 0.34) : (dark ? 0.30 : 0.20));
+                ctx.fill();
+                ctx.strokeStyle = c;
+                ctx.lineWidth = (hl ? 2.5 : 1.5) / this.view.s;
+                ctx.lineJoin = 'round';
+                ctx.lineCap = 'round';
+                const shared = [];
+                ctx.beginPath();
+                pos.loops.forEach(l => {
+                    let open = false;
+                    for (let i = 0; i < l.length; i++) {
+                        const p = l[i], q = l[(i + 1) % l.length], mx = (p[0] + q[0]) / 2, my = (p[1] + q[1]) / 2;
+                        if (Math.abs(Math.hypot(mx - co.x, my - co.y) - co.r) < 0.9) { shared.push(p, q, mx, my); open = false; continue; }
+                        if (!open) { ctx.moveTo(p[0], p[1]); open = true; }
+                        ctx.lineTo(q[0], q[1]);
+                    }
+                });
+                ctx.stroke();
+                ctx.lineCap = 'butt';
+                ctx.beginPath();
+                for (let i = 0; i < shared.length; i += 4) {
+                    const ang = Math.atan2(shared[i + 3] - co.y, shared[i + 2] - co.x) + Math.PI;
+                    if (Math.floor(ang * co.r / seg) % pos.m !== pos.k) continue;
+                    ctx.moveTo(shared[i][0], shared[i][1]);
+                    ctx.lineTo(shared[i + 1][0], shared[i + 1][1]);
+                }
+                ctx.stroke();
+            }
+
+            traceContour(field, x0, y0, x1, y1, g) {
+                const gx = Math.ceil((x1 - x0) / g) + 1, gy = Math.ceil((y1 - y0) / g) + 1, v = new Float32Array(gx * gy);
+                for (let j = 0; j < gy; j++) for (let i = 0; i < gx; i++) v[j * gx + i] = field(x0 + i * g, y0 + j * g);
+                const pt = new Map(), adj = new Map();
+                const vert = (i, j, hz) => {
+                    const key = (j * gx + i) * 2 + (hz ? 0 : 1);
+                    if (!pt.has(key)) {
+                        const a = v[j * gx + i], b = hz ? v[j * gx + i + 1] : v[(j + 1) * gx + i], t = a / (a - b);
+                        pt.set(key, hz ? [x0 + (i + t) * g, y0 + j * g] : [x0 + i * g, y0 + (j + t) * g]);
+                    }
+                    return key;
+                };
+                const link = (p, q) => {
+                    if (!adj.has(p)) adj.set(p, []);
+                    if (!adj.has(q)) adj.set(q, []);
+                    adj.get(p).push(q); adj.get(q).push(p);
+                };
+                for (let j = 0; j < gy - 1; j++) for (let i = 0; i < gx - 1; i++) {
+                    const a = v[j * gx + i] < 0, b = v[j * gx + i + 1] < 0, c = v[(j + 1) * gx + i + 1] < 0, d = v[(j + 1) * gx + i] < 0, e = [];
+                    if (a !== b) e.push(vert(i, j, true));
+                    if (b !== c) e.push(vert(i + 1, j, false));
+                    if (d !== c) e.push(vert(i, j + 1, true));
+                    if (a !== d) e.push(vert(i, j, false));
+                    if (e.length === 2) link(e[0], e[1]);
+                    else if (e.length === 4) { link(e[0], e[1]); link(e[2], e[3]); }
+                }
+                const loops = [], seen = new Set();
+                adj.forEach((nb, k0) => {
+                    if (seen.has(k0)) return;
+                    const loop = [];
+                    let prev = -1, cur = k0;
+                    while (cur !== undefined && !seen.has(cur)) {
+                        seen.add(cur);
+                        loop.push(pt.get(cur));
+                        const nxt = adj.get(cur).find(q => q !== prev && !seen.has(q));
+                        prev = cur; cur = nxt;
+                    }
+                    if (loop.length > 2) loops.push(loop);
+                });
+                return loops;
+            }
+
+            starLayout(model) {
+                const m = model.groups.length, full = (1 << m) - 1;
+                if (m < 3 || m > 6 || model.zones.size !== m + 1 || !model.zones.has(full)) return null;
+                for (let i = 0; i < m; i++) if (!model.zones.has(1 << i)) return null;
+                const F = this.frame(), cx = F.x + F.w / 2, cy = F.y + F.h / 2, half = Math.min(F.w, F.h) / 2 - 44;
+                const cc = Math.sqrt(model.zones.get(full)), pp = [];
+                for (let i = 0; i < m; i++) pp.push(Math.sqrt(model.zones.get(1 << i)));
+                const kk = half / Math.max(...pp.map(p => 2 * cc + 3 * p)), Rc = kk * cc, core = { x: cx, y: cy, r: Rc }, shapes = [];
+                for (let i = 0; i < m; i++) {
+                    const Rb = kk * pp[i], D = 2 * (Rc + Rb), th = -Math.PI / 2 + 2 * Math.PI * i / m;
+                    const ux = Math.cos(th), uy = Math.sin(th), rt = 0.3 * Math.min(Rc, Rb), step = Math.max(3, rt / 4), chain = [];
+                    for (let d = 0.3 * Rc; d < D; d += step) {
+                        const u = Math.max(0, Math.min(1, (d - (D - 2 * Rb)) / (2 * Rb)));
+                        chain.push({ x: cx + ux * d, y: cy + uy * d, r: rt + (Rb - rt) * u * u * (3 - 2 * u) });
+                    }
+                    chain.push({ x: cx + ux * D, y: cy + uy * D, r: Rb });
+                    const field = (x, y) => {
+                        let b = 1e9;
+                        for (const d of chain) { const t = Math.hypot(x - d.x, y - d.y) - d.r; if (t < b) b = t; }
+                        const a = Math.hypot(x - cx, y - cy) - Rc, k = 0.6 * Rc, h = Math.max(k - Math.abs(a - b), 0) / k;
+                        return Math.min(a, b) - h * h * k * 0.25;
+                    };
+                    const all = chain.concat([core]);
+                    const loops = this.traceContour(field, Math.min(...all.map(d => d.x - d.r)) - 12, Math.min(...all.map(d => d.y - d.r)) - 12,
+                                                    Math.max(...all.map(d => d.x + d.r)) + 12, Math.max(...all.map(d => d.y + d.r)) + 12, 1.5);
+                    shapes.push(Object.assign([cx + ux * D, cy + uy * D, Rb, Rb, 0, 1, 0],
+                        { disks: chain, field, loops, core, k: i, m, lx: cx + ux * (D + Rb + 14 + 40 * Math.abs(ux)), ly: cy + uy * (D + Rb + 22) }));
+                }
+                return shapes;
+            }
+
+            applyStar(model, shapes, v) {
+                this.circlePositions = new Map();
+                shapes.forEach((s, i) => {
+                    const g = model.groups[i];
+                    g.names.forEach((nm, q) => this.circlePositions.set(nm, { x: s[0], y: s[1], r: s[2], isEllipse: false, disks: s.disks || [], field: s.field, loops: s.loops, core: s.core, region: s.region, peers: s.peers, k: s.k, m: s.m, lx: s.lx, ly: s.ly, title: g.names.join(' = '), hidden: q > 0 }));
+                });
+                this.report = { ...v, boosted: false };
+            }
+
+            runSolver(model) {
+                const star = this.starLayout(model);
+                if (star) { const sv = this.validate(star, model); if (sv.ok) { this.applyStar(model, star, sv); return; } }
+                const m = model.groups.length, nMask = 1 << m, F = this.frame(), G = 10;
+                const cols = Math.floor(F.w / G), rows = Math.floor(F.h / G), N = cols * rows;
+                const S = 0.42 * N, target = new Float32Array(nMask);
+                let total = 0, boosted = false;
+                model.zones.forEach(c => total += c);
+                model.zones.forEach((c, z) => {
+                    let t = S * c / total;
+                    if (t < 0.025 * S) { t = 0.025 * S; boosted = true; }
+                    target[z] = t;
+                });
+                const xs = new Float32Array(N), ys = new Float32Array(N);
+                for (let n = 0; n < N; n++) { xs[n] = F.x + ((n % cols) + 0.5) * G; ys[n] = F.y + (Math.floor(n / cols) + 0.5) * G; }
+                const energy = (counts, shapes) => {
+                    let e = 0;
+                    for (let z = 1; z < nMask; z++) {
+                        const a = counts[z], t = target[z];
+                        if (t) e += Math.min(4, ((a - t) / t) ** 2) + (a === 0 ? 1 : 0);
+                        else if (a > 0) e += 3 + 60 * a / S;
+                    }
+                    shapes.forEach(s => {
+                        const ex = Math.hypot(s[2] * s[5], s[3] * s[6]), ey = Math.hypot(s[2] * s[6], s[3] * s[5]);
+                        const o = Math.max(0, F.x - (s[0] - ex), s[0] + ex - (F.x + F.w), F.y - (s[1] - ey), s[1] + ey - (F.y + F.h));
+                        e += (o / 50) ** 2 + 0.15 * Math.log(s[2] / s[3]) ** 2;
+                    });
+                    return e;
+                };
+                const run = (seed, warm) => {
+                    let a = seed >>> 0;
+                    const rnd = () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+                    const r0 = Math.sqrt(S * G * G / (Math.PI * m));
+                    const shapes = [];
+                    for (let t = 0; t < m; t++) {
+                        const ang = (t / m) * 6.283 + rnd();
+                        const s = [F.x + F.w / 2 + Math.cos(ang) * r0 * 0.8, F.y + F.h / 2 + Math.sin(ang) * r0 * 0.8, r0, r0 * (0.9 + rnd() * 0.2), rnd() * 3.14, 0, 0];
+                        this.setTrig(s);
+                        shapes.push(s);
+                    }
+                    const fresh = [];
+                    shapes.forEach((sh, t) => {
+                        const pv = warm && this.prevShapes.get(model.groups[t].names[0] + '|' + model.groups[t].key);
+                        if (pv) { for (let q = 0; q < 5; q++) sh[q] = pv[q]; this.setTrig(sh); } else fresh.push(t);
+                    });
+                    let masks = new Int32Array(N), tmp = new Int32Array(N);
+                    const counts = new Float32Array(nMask);
+                    for (let n = 0; n < N; n++) {
+                        let mk = 0;
+                        for (let t = 0; t < m; t++) if (this.insideShape(shapes[t], xs[n], ys[n])) mk |= 1 << t;
+                        masks[n] = mk; counts[mk]++;
+                    }
+                    let e = energy(counts, shapes), best = shapes.map(s => s.slice()), bestE = e;
+                    const ITER = 3000, step = [30, 30, 16, 16, 0.5];
+                    for (let it = 0; it < ITER; it++) {
+                        const T = (warm ? 0.35 : 1) * (1 - it / ITER), i = (warm && fresh.length && rnd() < 0.75) ? fresh[(rnd() * fresh.length) | 0] : (rnd() * m) | 0, c = shapes[i].slice(), q = (rnd() * 5) | 0;
+                        c[q] += (rnd() - 0.5) * 2 * step[q] * (0.15 + T);
+                        c[2] = Math.max(14, Math.min(260, c[2]));
+                        c[3] = Math.max(14, Math.min(260, c[3]));
+                        this.setTrig(c);
+                        const bit = 1 << i;
+                        counts.fill(0);
+                        for (let n = 0; n < N; n++) {
+                            const mk = (masks[n] & ~bit) | (this.insideShape(c, xs[n], ys[n]) ? bit : 0);
+                            tmp[n] = mk; counts[mk]++;
+                        }
+                        const old = shapes[i];
+                        shapes[i] = c;
+                        const ec = energy(counts, shapes);
+                        if (ec < e || rnd() < Math.exp((e - ec) / (0.05 * T + 1e-4))) {
+                            e = ec;
+                            const sw = masks; masks = tmp; tmp = sw;
+                            if (e < bestE) { bestE = e; best = shapes.map(s => s.slice()); }
+                        } else shapes[i] = old;
+                    }
+                    return { shapes: best, e: bestE };
+                };
+                const warm = !!this.prevShapes && model.groups.some(g => this.prevShapes.has(g.names[0] + '|' + g.key));
+                let pick = null;
+                const t0 = Date.now();
+                for (let k = 0; k < 10; k++) {
+                    const r = run(1234 + k * 7919, k === 0 && warm), v = this.validate(r.shapes, model);
+                    if (!pick || (v.ok && !pick.v.ok) || (v.ok === pick.v.ok && r.e < pick.e)) pick = { ...r, v };
+                    if (v.ok && v.maxErr < 15) break;
+                    if (Date.now() - t0 > 1200) break;
+                }
+                if (!pick.v.ok) {
+                    const zl = this.zoneLayout(model), zv = zl && this.validate(zl, model);
+                    if (zv && zv.ok) { zv.narrow = zl.narrow; this.applyStar(model, zl, zv); this.prevShapes = null; return; }
+                }
+                this.circlePositions = new Map();
+                pick.shapes.forEach((s, i) => {
+                    const g = model.groups[i];
+                    g.names.forEach((nm, q) => this.circlePositions.set(nm, {
+                        x: s[0], y: s[1], rx: s[2], ry: s[3], rotation: s[4], r: Math.sqrt(s[2] * s[3]),
+                        isEllipse: true, title: g.names.join(' = '), hidden: q > 0 }));
+                });
+                this.report = { ...pick.v, boosted };
+                this.prevShapes = new Map();
+                pick.shapes.forEach((sh, i) => this.prevShapes.set(model.groups[i].names[0] + '|' + model.groups[i].key, sh.slice(0, 5)));
+            }
+
+            calculateCirclePositions() {
+                this.model = this.buildModel();
+                this.derived = this.model.derived;
+                const mo = this.model, key = JSON.stringify([mo.groups.map(g => g.names.join() + g.key), mo.outside, Array.from(mo.derived), this.W, this.H]);
+                if (key !== this.layoutKey) {
+                    this.layoutKey = key;
+                    this.circlePositions = new Map();
+                    this.report = null;
+                    if (mo.groups.length > 8) { this.legacyCirclePositions(); this.report = { legacy: true }; }
+                    else if (mo.groups.length > 0) this.runSolver(mo);
+                    this.buildDerived(mo);
+                    this.labels = this.computeLabels();
+                    this.computeHatch(mo);
+                    this.uBox = this.computeUBox();
+                }
+                this.showReport();
+                this.updateLegend();
+            }
+
+            showReport() {
+                const el = document.getElementById('validity'), r = this.report;
+                if (!el) return;
+                el.className = 'validity';
+                if (!r) { el.textContent = ''; return; }
+                if (r.legacy) { el.textContent = 'Более 8 множеств: строгая проверка недоступна'; return; }
+                const nm = z => this.model.groups.filter((g, i) => z & (1 << i)).map(g => g.names[0]).join('∩');
+                const total = this.model.zones.size;
+                if (r.ok) {
+                    el.textContent = `Проверка пройдена: зон ${total} из ${total}, все связны, ошибка площади ${r.maxErr.toFixed(1)}%` + (r.narrow ? ', есть узкие стыки' : '') + (r.boosted ? ' (малые зоны увеличены)' : '');
+                } else {
+                    el.className = 'validity bad';
+                    el.textContent = 'Корректная диаграмма не построена' + (r.missing.length ? '; нет зон: ' + r.missing.map(nm).join(', ') : '') +
+                        (r.extra.length ? '; лишние зоны: ' + r.extra.map(nm).join(', ') : '') + (r.split.length ? '; разорваны зоны: ' + r.split.map(nm).join(', ') : '') +
+                        (r.splitSets && r.splitSets.length ? '; разорваны множества: ' + r.splitSets.map(i => this.model.groups[i].names[0]).join(', ') : '');
+                }
+            }
+
+            shapeVal(p, x, y) {
+                if (p.field) return p.field(x, y);
+                const dx = x - p.x, dy = y - p.y, c = Math.cos(p.rotation), s = Math.sin(p.rotation);
+                return (Math.hypot((dx * c + dy * s) / p.rx, (-dx * s + dy * c) / p.ry) - 1) * Math.min(p.rx, p.ry);
+            }
+
+            buildDerived(mo) {
+                const P = mo.groups.map(g => this.circlePositions.get(g.names[0]));
+                if (P.some(o => !o)) return;
+                const R = o => Math.max(o.rx || o.r, o.ry || o.r);
+                mo.derived.forEach((dv, name) => {
+                    const f = (x, y) => {
+                        const v = P.map(o => this.shapeVal(o, x, y));
+                        let best = 1e9;
+                        dv.masks.forEach(M => {
+                            let w = -1e9;
+                            for (let i = 0; i < v.length; i++) w = Math.max(w, (M >> i) & 1 ? v[i] : -v[i]);
+                            best = Math.min(best, w);
+                        });
+                        return best;
+                    };
+                    const loops = this.traceContour(f, Math.min(...P.map(o => o.x - R(o))) - 6, Math.min(...P.map(o => o.y - R(o))) - 6,
+                                                    Math.max(...P.map(o => o.x + R(o))) + 6, Math.max(...P.map(o => o.y + R(o))) + 6, 2);
+                    if (!loops.length) return;
+                    const all = loops.flat(), xs = all.map(q => q[0]), ys = all.map(q => q[1]);
+                    const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+                    this.circlePositions.set(name, { derived: dv, loops, x: (x0 + x1) / 2, y: (y0 + y1) / 2, r: Math.max(x1 - x0, y1 - y0) / 2,
+                        isEllipse: false, lx: (x0 + x1) / 2, ly: y0 - 18, title: `${name} = ${dv.expr}` });
+                });
+            }
+
+            drawDerived(pos, c, hl) {
+                const ctx = this.ctx, dark = this.isDarkTheme;
+                ctx.beginPath();
+                pos.loops.forEach(l => {
+                    ctx.moveTo(l[0][0], l[0][1]);
+                    for (let i = 1; i < l.length; i++) ctx.lineTo(l[i][0], l[i][1]);
+                    ctx.closePath();
+                });
+                ctx.fillStyle = this.hexA(c, hl ? (dark ? 0.45 : 0.36) : (dark ? 0.28 : 0.2));
+                ctx.fill();
+                ctx.strokeStyle = c;
+                ctx.lineWidth = (hl ? 2.5 : 2) / this.view.s;
+                ctx.setLineDash([7 / this.view.s, 5 / this.view.s]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            zoomAt(sx, sy, f) {
+                const v = this.view, s2 = Math.max(0.4, Math.min(10, v.s * f)), k = s2 / v.s;
+                v.tx = sx - (sx - v.tx) * k; v.ty = sy - (sy - v.ty) * k; v.s = s2;
+                this.redraw();
+            }
+
+            resetView() { this.view = { s: 1, tx: 0, ty: 0 }; this.redraw(); }
+
+            redraw() {
+                if (this.raf) return;
+                this.raf = requestAnimationFrame(() => { this.raf = 0; this.visualizeSets(); });
+            }
+
+            computeLabels() {
+                const F = this.frame(), items = [];
+                this.sets.forEach(sd => {
+                    const pos = this.circlePositions.get(sd.name);
+                    if (!pos || pos.hidden) return;
+                    let pts;
+                    if (pos.loops) pts = pos.loops.flat();
+                    else {
+                        pts = [];
+                        const c = Math.cos(pos.rotation), sn = Math.sin(pos.rotation);
+                        for (let t = 0; t < 90; t++) {
+                            const a = t / 90 * 6.2832, u = pos.rx * Math.cos(a), v = pos.ry * Math.sin(a);
+                            pts.push([pos.x + u * c - v * sn, pos.y + u * sn + v * c]);
+                        }
+                    }
+                    items.push({ sd, pos, pts });
+                });
+                if (!items.length) return [];
+                const gx = items.reduce((a, it) => a + it.pos.x, 0) / items.length, gy = items.reduce((a, it) => a + it.pos.y, 0) / items.length;
+                const solid = items.map(it => it.pos).filter(p => !p.derived);
+                const clampX = x => Math.max(F.x + 16, Math.min(F.x + F.w - 16, x)), clampY = y => Math.max(F.y + 16, Math.min(F.y + F.h - 16, y));
+                const labels = items.map(it => {
+                    let best = null, bs = 1e18;
+                    it.pts.forEach(q => {
+                        const cover = solid.filter(o => o !== it.pos && this.shapeVal(o, q[0], q[1]) < 0).length;
+                        const sc = cover * 1e4 - Math.hypot(q[0] - gx, q[1] - gy);
+                        if (sc < bs) { bs = sc; best = q; }
+                    });
+                    let dx = best[0] - gx, dy = best[1] - gy;
+                    const d = Math.hypot(dx, dy) || 1;
+                    dx /= d; dy /= d;
+                    const x = clampX(best[0] + dx * 28), y = clampY(best[1] + dy * 28);
+                    return { text: it.pos.derived ? it.sd.name : (it.pos.title || it.sd.name), color: it.sd.originalColor, ax: best[0], ay: best[1], x, y, x0: x, y0: y };
+                });
+                for (let it = 0; it < 100; it++) labels.forEach((a, i) => {
+                    let fx = (a.x0 - a.x) * 0.04, fy = (a.y0 - a.y) * 0.04;
+                    labels.forEach((b, j) => {
+                        if (i === j) return;
+                        const dx = a.x - b.x, dy = a.y - b.y, d = Math.hypot(dx, dy) || 0.01;
+                        if (d < 36) { fx += dx / d * (36 - d) * 0.3; fy += dy / d * (36 - d) * 0.3; }
+                    });
+                    const da = Math.hypot(a.x - a.ax, a.y - a.ay) || 1;
+                    if (da < 24) { fx += (a.x - a.ax) / da * (24 - da) * 0.3; fy += (a.y - a.ay) / da * (24 - da) * 0.3; }
+                    a.x = clampX(a.x + fx); a.y = clampY(a.y + fy);
+                });
+                return labels;
+            }
+
+            drawLabels() {
+                if (!this.showLabels || !this.labels) return;
+                const ctx = this.ctx, sc = this.view.s, dark = this.isDarkTheme;
+                ctx.font = '700 14px "Segoe UI", Roboto, Arial, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                this.labels.forEach(L => {
+                    ctx.strokeStyle = L.color;
+                    ctx.lineWidth = 1 / sc;
+                    ctx.beginPath(); ctx.moveTo(L.ax, L.ay); ctx.lineTo(L.x, L.y); ctx.stroke();
+                    ctx.fillStyle = L.color;
+                    ctx.fillRect(L.ax - 2.5 / sc, L.ay - 2.5 / sc, 5 / sc, 5 / sc);
+                    const w = ctx.measureText(L.text).width + 12, h = 22;
+                    ctx.fillStyle = dark ? '#111827' : '#ffffff';
+                    ctx.fillRect(L.x - w / 2, L.y - h / 2, w, h);
+                    ctx.lineWidth = 1.5 / sc;
+                    ctx.strokeRect(L.x - w / 2, L.y - h / 2, w, h);
+                    ctx.fillStyle = L.color;
+                    ctx.fillText(L.text, L.x, L.y + 1);
+                });
+            }
+
+            updateLegend() {
+                const el = document.getElementById('legend');
+                if (!el) return;
+                let html = '';
+                this.sets.forEach(sd => {
+                    const dv = this.derived && this.derived.get(sd.name);
+                    html += `<div class="lg-row" title="${dv ? sd.name + ' = ' + dv.expr : sd.name}"><span class="lg-sw${dv ? ' dashed' : ''}" style="--c:${sd.originalColor}"></span><b>${sd.name}</b>` +
+                            (dv ? `<span class="lg-e">= ${dv.expr}</span>` : '') + `<span class="lg-n">n = ${sd.elements.length}</span></div>`;
+                });
+                if (html !== this.legendHTML) { this.legendHTML = html; el.innerHTML = html; el.style.display = html ? 'block' : 'none'; }
+            }
+
+            zoneLayout(model) {
+                const m = model.groups.length, F = this.frame();
+                const Z = Array.from(model.zones).filter(([mask]) => mask).map(([mask, c]) => ({ mask, c }));
+                if (Z.length < 2) return null;
+                const pc = x => { let n = 0; for (; x; x >>= 1) n += x & 1; return n; };
+                const total = Z.reduce((a, z) => a + z.c, 0), S = 0.3 * F.w * F.h, G = 8;
+                const cols = Math.floor(F.w / G), rows = Math.floor(F.h / G), rmax = Math.min(F.w, F.h) / 3;
+                const rho = (z, x, y) => Math.hypot(x - z.x, y - z.y) / z.r - 1;
+                const measure = zs => {
+                    const cnt = new Float32Array(zs.length);
+                    for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+                        const x = F.x + (i + 0.5) * G, y = F.y + (j + 0.5) * G;
+                        let bi = -1, bv = 0;
+                        for (let k = 0; k < zs.length; k++) { const v = rho(zs[k], x, y); if (v < bv) { bv = v; bi = k; } }
+                        if (bi >= 0) cnt[bi]++;
+                    }
+                    return cnt;
+                };
+                const build = seed => {
+                    let a = seed >>> 0;
+                    const rnd = () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+                    const zs = Z.map(z => ({ mask: z.mask, c: z.c, r: Math.sqrt(S * z.c / total / Math.PI), x: F.x + F.w * (0.25 + 0.5 * rnd()), y: F.y + F.h * (0.25 + 0.5 * rnd()) }));
+                    for (let it = 0; it < 240; it++) {
+                        zs.forEach((p, i) => {
+                            let fx = (F.x + F.w / 2 - p.x) * 0.002, fy = (F.y + F.h / 2 - p.y) * 0.002;
+                            zs.forEach((q, j) => {
+                                if (i === j) return;
+                                let dx = q.x - p.x, dy = q.y - p.y;
+                                const d = Math.hypot(dx, dy) || 0.01, sum = p.r + q.r, sh = pc(p.mask & q.mask), df = pc(p.mask ^ q.mask), tg = sum * (df === 1 ? 0.7 : 0.75);
+                                dx /= d; dy /= d;
+                                let f = 0;
+                                if (sh && d > tg) f = (d - tg) * (df === 1 ? 0.08 : 0.06);
+                                if (!sh && d < sum * 1.3) f = -(sum * 1.3 - d) * 0.15;
+                                if (d < sum * 0.55) f = -(sum * 0.55 - d) * 0.3;
+                                fx += dx * f; fy += dy * f;
+                            });
+                            p.x = Math.max(F.x + p.r, Math.min(F.x + F.w - p.r, p.x + fx));
+                            p.y = Math.max(F.y + p.r, Math.min(F.y + F.h - p.r, p.y + fy));
+                        });
+                        if (it % 24 === 23) {
+                            const cnt = measure(zs);
+                            zs.forEach((z, k) => { z.r = Math.min(rmax, z.r * Math.max(0.9, Math.min(1.1, Math.sqrt(S * z.c / total / (G * G) / Math.max(cnt[k], 1))))); });
+                        }
+                    }
+                    zs.forEach(p => {
+                        p.x = Math.max(F.x + p.r, Math.min(F.x + F.w - p.r, p.x));
+                        p.y = Math.max(F.y + p.r, Math.min(F.y + F.h - p.r, p.y));
+                    });
+                    return zs;
+                };
+                const shapesOf = zs => {
+                    const fs = Array.from({ length: m }, (_, i) => (x, y) => {
+                        let a = 1e9, b = 0;
+                        for (const z of zs) { const v = rho(z, x, y); if ((z.mask >> i) & 1) { if (v < a) a = v; } else if (v < b) b = v; }
+                        return a - b;
+                    });
+                    return fs.map((f, i) => {
+                        const mine = zs.filter(z => (z.mask >> i) & 1);
+                        const cx = mine.reduce((a, z) => a + z.x, 0) / mine.length, cy = mine.reduce((a, z) => a + z.y, 0) / mine.length;
+                        return Object.assign([cx, cy, 1, 1, 0, 1, 0], { field: f, region: true, peers: fs, k: i, m, zs: mine });
+                    });
+                };
+                let pick = null, loose = null;
+                const t0 = Date.now();
+                for (let k = 0; k < 16; k++) {
+                    const sh = shapesOf(build(777 + k * 104729)), v = this.validate(sh, model, true);
+                    if (v.ok) { if (!pick || v.maxErr < pick.v.maxErr) pick = { sh, v }; if (v.maxErr < 20) break; }
+                    else if (!loose) { const v0 = this.validate(sh, model); if (v0.ok) loose = { sh, v: v0 }; }
+                    if (Date.now() - t0 > 1800) break;
+                }
+                const strictOk = !!pick;
+                pick = pick || loose;
+                if (!pick) return null;
+                pick.sh.narrow = !strictOk;
+                pick.sh.forEach(sp => {
+                    const z = sp.zs;
+                    sp.loops = this.traceContour(sp.field, Math.min(...z.map(q => q.x - q.r)) - 8, Math.min(...z.map(q => q.y - q.r)) - 8,
+                                                 Math.max(...z.map(q => q.x + q.r)) + 8, Math.max(...z.map(q => q.y + q.r)) + 8, 1.5);
+                    const far = Math.max(...sp.loops.flat().map(q => Math.hypot(q[0] - sp[0], q[1] - sp[1])), 10);
+                    sp[2] = sp[3] = far;
+                });
+                return pick.sh;
+            }
+
+            drawRegion(pos, c, hl) {
+                const ctx = this.ctx, dark = this.isDarkTheme, pr = pos.peers, n = pr.length;
+                ctx.beginPath();
+                pos.loops.forEach(l => {
+                    ctx.moveTo(l[0][0], l[0][1]);
+                    for (let i = 1; i < l.length; i++) ctx.lineTo(l[i][0], l[i][1]);
+                    ctx.closePath();
+                });
+                ctx.fillStyle = this.hexA(c, hl ? (dark ? 0.42 : 0.34) : (dark ? 0.30 : 0.20));
+                ctx.fill();
+                ctx.strokeStyle = c;
+                ctx.lineWidth = (hl ? 2.5 : 1.5) / this.view.s;
+                ctx.lineJoin = 'round';
+                ctx.lineCap = 'round';
+                const dashed = [];
+                ctx.beginPath();
+                pos.loops.forEach(l => {
+                    let open = false;
+                    for (let i = 0; i < l.length; i++) {
+                        const p = l[i], q = l[(i + 1) % l.length], mx = (p[0] + q[0]) / 2, my = (p[1] + q[1]) / 2, who = [];
+                        for (let j = 0; j < n; j++) if (Math.abs(pr[j](mx, my)) < 0.015) who.push(j);
+                        if (who.length > 1) { dashed.push(p, q, who.length, who.indexOf(pos.k), mx, my); open = false; continue; }
+                        if (!open) { ctx.moveTo(p[0], p[1]); open = true; }
+                        ctx.lineTo(q[0], q[1]);
+                    }
+                });
+                ctx.stroke();
+                ctx.lineCap = 'butt';
+                ctx.beginPath();
+                for (let i = 0; i < dashed.length; i += 6) {
+                    if (Math.floor((dashed[i + 4] + 0.37 * dashed[i + 5]) / 6) % dashed[i + 2] !== dashed[i + 3]) continue;
+                    ctx.moveTo(dashed[i][0], dashed[i][1]);
+                    ctx.lineTo(dashed[i + 1][0], dashed[i + 1][1]);
+                }
+                ctx.stroke();
+            }
+
+            computeHatch(mo) {
+                this.hatch = [];
+                const P = mo.groups.map(g => this.circlePositions.get(g.names[0]));
+                if (!P.length || P.some(o => !o)) return;
+                const box = o => {
+                    if (o.loops) { const a = o.loops.flat(); return [Math.min(...a.map(q => q[0])), Math.min(...a.map(q => q[1])), Math.max(...a.map(q => q[0])), Math.max(...a.map(q => q[1]))]; }
+                    const r = Math.max(o.rx || o.r, o.ry || o.r);
+                    return [o.x - r, o.y - r, o.x + r, o.y + r];
+                };
+                mo.zones.forEach((c, mask) => {
+                    const idx = [];
+                    for (let i = 0; i < P.length; i++) if ((mask >> i) & 1) idx.push(i);
+                    if (idx.length < 2) return;
+                    const f = (x, y) => {
+                        let w = -1e9;
+                        for (let i = 0; i < P.length; i++) { const v = this.shapeVal(P[i], x, y); w = Math.max(w, (mask >> i) & 1 ? v : -v); }
+                        return w;
+                    };
+                    const b = idx.map(i => box(P[i])), x0 = Math.min(...b.map(q => q[0])) - 6, y0 = Math.min(...b.map(q => q[1])) - 6;
+                    const x1 = Math.max(...b.map(q => q[2])) + 6, y1 = Math.max(...b.map(q => q[3])) + 6;
+                    const loops = this.traceContour(f, x0, y0, x1, y1, 2);
+                    if (!loops.length) return;
+                    const a = loops.flat();
+                    this.hatch.push({ loops, colors: idx.map(i => this.sets.get(mo.groups[i].names[0]).originalColor),
+                        box: [Math.min(...a.map(q => q[0])), Math.min(...a.map(q => q[1])), Math.max(...a.map(q => q[0])), Math.max(...a.map(q => q[1]))] });
+                });
+            }
+
+            drawHatch() {
+                if (!this.hatch || !this.hatch.length) return;
+                const ctx = this.ctx, step = 10;
+                this.hatch.forEach(h => {
+                    ctx.save();
+                    ctx.beginPath();
+                    h.loops.forEach(l => {
+                        ctx.moveTo(l[0][0], l[0][1]);
+                        for (let i = 1; i < l.length; i++) ctx.lineTo(l[i][0], l[i][1]);
+                        ctx.closePath();
+                    });
+                    ctx.clip();
+                    ctx.globalAlpha = 0.55;
+                    ctx.lineWidth = step / Math.SQRT2;
+                    ctx.lineCap = 'butt';
+                    for (let t = h.box[0] + h.box[1], k = 0; t <= h.box[2] + h.box[3] + step; t += step, k++) {
+                        ctx.strokeStyle = h.colors[k % h.colors.length];
+                        ctx.beginPath();
+                        ctx.moveTo(t - h.box[1] + 4, h.box[1] - 4);
+                        ctx.lineTo(t - h.box[3] - 4, h.box[3] + 4);
+                        ctx.stroke();
+                    }
+                    ctx.restore();
+                });
+            }
+
+            computeUBox() {
+                const pts = [];
+                this.circlePositions.forEach(p => {
+                    if (p.hidden) return;
+                    if (p.loops) p.loops.forEach(l => l.forEach(q => pts.push(q)));
+                    else if (p.isEllipse) {
+                        const c = Math.cos(p.rotation), sn = Math.sin(p.rotation);
+                        for (let t = 0; t < 48; t++) {
+                            const a = t / 48 * 6.2832, u = p.rx * Math.cos(a), v = p.ry * Math.sin(a);
+                            pts.push([p.x + u * c - v * sn, p.y + u * sn + v * c]);
+                        }
+                    }
+                });
+                if (!pts.length) return this.frame();
+                const out = this.model ? this.model.outside.length : 0, mg = 36 + (out ? 60 + 10 * Math.sqrt(out) : 0);
+                const x0 = Math.max(6, Math.min(...pts.map(q => q[0])) - mg), y0 = Math.max(6, Math.min(...pts.map(q => q[1])) - mg);
+                const x1 = Math.min(this.W - 6, Math.max(...pts.map(q => q[0])) + mg), y1 = Math.min(this.H - 6, Math.max(...pts.map(q => q[1])) + mg);
+                return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+            }
+
+            ubox() { return this.uBox || this.frame(); }
+
+            showFrame() {
+                const t = document.getElementById('showUniverse');
+                return !!((t && t.checked) || (this.model && this.model.outside.length > 0));
+            }
+
+            hexA(hex, a) {
+                const n = parseInt(hex.slice(1), 16);
+                return `rgba(${n >> 16}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
+            }
+
+            drawCircle(setData, highlight = false) {
+                const pos = this.circlePositions.get(setData.name);
+                if (!pos || pos.hidden) return;
+                const ctx = this.ctx, c = setData.originalColor, dark = this.isDarkTheme;
+                const trace = (g) => {
+                    ctx.beginPath();
+                    if (pos.isEllipse) ctx.ellipse(pos.x, pos.y, pos.rx + g, pos.ry + g, pos.rotation, 0, 2 * Math.PI);
+                    else ctx.arc(pos.x, pos.y, pos.r + g, 0, 2 * Math.PI);
+                };
+                const edge = pos.isEllipse ? Math.max(pos.rx, pos.ry) : pos.r;
+                const grad = ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, edge);
+                grad.addColorStop(0, this.hexA(c, dark ? 0.10 : 0.05));
+                grad.addColorStop(1, this.hexA(c, highlight ? (dark ? 0.42 : 0.34) : (dark ? 0.30 : 0.20)));
+                if (highlight && !pos.disks && !pos.derived) {
+                    trace(6);
+                    ctx.strokeStyle = this.hexA(c, 0.4);
+                    ctx.lineWidth = (1) / this.view.s;
+                    ctx.stroke();
+                }
+                if (pos.derived) this.drawDerived(pos, c, highlight);
+                else if (pos.disks) this.drawUnion(pos, c, highlight);
+                else {
+                    trace(0);
+                    ctx.fillStyle = grad;
+                    ctx.fill();
+                    ctx.strokeStyle = c;
+                    ctx.lineWidth = (highlight ? 2.5 : 1.5) / this.view.s;
+                    ctx.stroke();
+                }
+            }
+
+            computeElementLayout() {
+                const sets = Array.from(this.sets.values()).filter(s => !(this.derived && this.derived.has(s.name)));
+                const names = sets.map(s => s.name).sort();
+                const shapes = names.map(n => this.circlePositions.get(n));
+                const G = 4, cols = Math.ceil(this.W / G), rows = Math.ceil(this.H / G), N = cols * rows;
+                const inside = (p, x, y) => {
+                    if (p.field) return p.field(x, y) < 0;
+                    const dx = x - p.x, dy = y - p.y;
+                    if (!p.isEllipse) return dx * dx + dy * dy <= p.r * p.r;
+                    const c = Math.cos(p.rotation), s = Math.sin(p.rotation);
+                    const u = dx * c + dy * s, v = -dx * s + dy * c;
+                    return (u * u) / (p.rx * p.rx) + (v * v) / (p.ry * p.ry) <= 1;
+                };
+                // 1. Карта зон: каждая клетка поля получает метку «в каких множествах лежит» (A, B, AB, ...)
+                const lab = new Array(N);
+                for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+                    let k = '';
+                    for (let t = 0; t < names.length; t++) if (shapes[t] && inside(shapes[t], i * G + G / 2, j * G + G / 2)) k += names[t];
+                    lab[j * cols + i] = this.inFrame(i * G + G / 2, j * G + G / 2) ? k : null;
+                }
+                // 2. Расстояние от каждой клетки до границы её зоны
+                const d = new Float32Array(N);
+                for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+                    const n = j * cols + i, k = lab[n];
+                    const edge = i === 0 || j === 0 || i === cols - 1 || j === rows - 1 ||
+                        lab[n - 1] !== k || lab[n + 1] !== k || lab[n - cols] !== k || lab[n + cols] !== k;
+                    d[n] = edge ? 0 : 1e9;
+                }
+                for (let j = 1; j < rows - 1; j++) for (let i = 1; i < cols - 1; i++) {
+                    const n = j * cols + i;
+                    d[n] = Math.min(d[n], d[n - 1] + 1, d[n - cols] + 1, d[n - cols - 1] + 1.4, d[n - cols + 1] + 1.4);
+                }
+                for (let j = rows - 2; j > 0; j--) for (let i = cols - 2; i > 0; i--) {
+                    const n = j * cols + i;
+                    d[n] = Math.min(d[n], d[n + 1] + 1, d[n + cols] + 1, d[n + cols + 1] + 1.4, d[n + cols - 1] + 1.4);
+                }
+                // 3. Центр каждой зоны: самая «глубокая» точка внутри неё
+                const zones = new Map();
+                for (let n = 0; n < N; n++) {
+                    const k = lab[n];
+                    if (k === null) continue;
+                    let z = zones.get(k);
+                    if (!z) zones.set(k, z = { best: -1, bn: 0, cells: 0 });
+                    z.cells++;
+                    if (d[n] > z.best) { z.best = d[n]; z.bn = n; }
+                }
+                zones.forEach(z => {
+                    z.ax = (z.bn % cols) * G + G / 2;
+                    z.ay = Math.floor(z.bn / cols) * G + G / 2;
+                    z.depth = z.best * G;
+                });
+                // 4. Элементы по зонам, начальные позиции по спирали вокруг центра зоны
+                const groups = new Map();
+                new Set([...sets.flatMap(s => s.elements), ...(this.model ? this.model.outside : [])]).forEach(el => {
+                    const k = sets.filter(s => s.elements.includes(el)).map(s => s.name).sort().join('');
+                    if (!groups.has(k)) groups.set(k, []);
+                    groups.get(k).push(el);
+                });
+                const pts = [];
+                groups.forEach((els, k) => {
+                    const z = zones.get(k);
+                    if (!z) {
+                        const f = this.getRegionCoordinates(k);
+                        if (!f) return;
+                        els.forEach((el, m) => pts.push({ el, fixed: true, fs: 13, x: f.x + (m % 3 - 1) * 16, y: f.y + (Math.floor(m / 3) - 0.5) * 15 }));
+                        return;
+                    }
+                    const sep = Math.max(10, Math.min(22, Math.sqrt(z.cells * G * G / els.length) * 0.8));
+                    els.forEach((el, m) => {
+                        const a = m * 2.4, r = sep * 0.6 * Math.sqrt(m);
+                        pts.push({ el, k, z, sep, fs: sep < 14 ? 10 : sep < 18 ? 12 : 13, margin: Math.min(7, z.depth * 0.5),
+                                   x: z.ax + r * Math.cos(a), y: z.ay + r * Math.sin(a) });
+                    });
+                });
+                const ok = (p, x, y) => {
+                    const i = Math.floor(x / G), j = Math.floor(y / G);
+                    if (i < 0 || j < 0 || i >= cols || j >= rows) return false;
+                    const n = j * cols + i;
+                    return lab[n] === p.k && d[n] * G >= p.margin;
+                };
+                const mv = pts.filter(p => !p.fixed);
+                mv.forEach(p => {
+                    for (let t = 0; t < 8 && !ok(p, p.x, p.y); t++) { p.x = p.z.ax + (p.x - p.z.ax) * 0.6; p.y = p.z.ay + (p.y - p.z.ay) * 0.6; }
+                    if (!ok(p, p.x, p.y)) { p.x = p.z.ax; p.y = p.z.ay; }
+                });
+                // 5. Пружины: притяжение к центру своей зоны, отталкивание друг от друга, границы зоны не пересекаются
+                for (let it = 0; it < 120; it++) {
+                    mv.forEach((p, a) => {
+                        let fx = (p.z.ax - p.x) * 0.04, fy = (p.z.ay - p.y) * 0.04;
+                        mv.forEach((q, b) => {
+                            if (a === b) return;
+                            let dx = p.x - q.x, dy = p.y - q.y, dist = Math.hypot(dx, dy);
+                            const m = Math.min(p.sep, q.sep);
+                            if (dist < m) {
+                                if (dist < 0.01) { dx = Math.cos(a + 1); dy = Math.sin(a + 1); dist = 1; }
+                                const f = (m - dist) * 0.35 / dist;
+                                fx += dx * f; fy += dy * f;
+                            }
+                        });
+                        for (const s of [1, 0.5, 0.25]) {
+                            if (ok(p, p.x + fx * s, p.y + fy * s)) { p.x += fx * s; p.y += fy * s; break; }
+                        }
+                    });
+                }
+                return pts;
+            }
+
+            drawElementsOnCanvas() {
+                if (!this.showLabels || this.sets.size === 0) return;
+                const ctx = this.ctx;
+                ctx.fillStyle = this.isDarkTheme ? '#f3f4f6' : '#111827';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                (this.elCache && this.elCache.key === this.layoutKey ? this.elCache.pts : (this.elCache = { key: this.layoutKey, pts: this.computeElementLayout() }).pts).forEach(p => {
+                    ctx.font = `600 ${p.fs}px "Segoe UI", Roboto, Arial, sans-serif`;
+                    ctx.fillText(String(p.el), p.x, p.y);
+                });
+            }
+
+
+            getRegionCoordinates(regionKey) {
+                const setsInRegion = regionKey.split('');
+                const positions = setsInRegion.map(name => this.circlePositions.get(name)).filter(Boolean);
+
+                if (positions.length === 0) return null;
+
+                const avgX = positions.reduce((sum, p) => sum + p.x, 0) / positions.length;
+                const avgY = positions.reduce((sum, p) => sum + p.y, 0) / positions.length;
+
+                return { x: avgX, y: avgY };
+            }
+
+            visualizeSets() {
+                this.clearCanvas();
+                if (this.sets.size === 0) return;
+
+                this.calculateCirclePositions();
+
+                this.sets.forEach(setData => {
+                    const isSelected = this.selectedSets.has(setData.name);
+                    this.drawCircle(setData, isSelected);
+                });
+
+                this.drawHatch();
+                this.drawElementsOnCanvas();
+                this.drawLabels();
+            }
+
+            clearCanvas() {
+                const c = this.ctx, d = this.isDarkTheme;
+                c.setTransform(this.lastK, 0, 0, this.lastK, 0, 0);
+                c.clearRect(0, 0, this.W, this.H);
+                c.fillStyle = d ? '#111827' : '#ffffff';
+                c.fillRect(0, 0, this.W, this.H);
+                const vw = this.view, kk = this.lastK;
+                c.setTransform(kk * vw.s, 0, 0, kk * vw.s, kk * vw.tx, kk * vw.ty);
+                const lx0 = -vw.tx / vw.s, lx1 = (this.W - vw.tx) / vw.s, ly0 = -vw.ty / vw.s, ly1 = (this.H - vw.ty) / vw.s;
+                c.strokeStyle = d ? '#1b2434' : '#eef0f3';
+                c.lineWidth = (1) / this.view.s;
+                c.beginPath();
+                for (let x = Math.ceil((lx0 - this.W / 2) / 40) * 40 + this.W / 2; x <= lx1; x += 40) { c.moveTo(x, ly0); c.lineTo(x, ly1); }
+                for (let y = Math.ceil((ly0 - this.H / 2) / 40) * 40 + this.H / 2; y <= ly1; y += 40) { c.moveTo(lx0, y); c.lineTo(lx1, y); }
+                c.stroke();
+                const F = this.ubox(), v = document.getElementById('validity');
+                if (v) v.textContent = '';
+                this.updateLegend();
+                if (this.showFrame()) {
+                c.strokeStyle = d ? '#4b5563' : '#aab1bc';
+                c.lineWidth = (1) / this.view.s;
+                c.setLineDash([8 / vw.s, 6 / vw.s]);
+                c.strokeRect(F.x, F.y, F.w, F.h);
+                c.setLineDash([]);
+                c.fillStyle = d ? '#9ca3af' : '#374151';
+                c.font = '700 14px "Segoe UI", Roboto, Arial, sans-serif';
+                c.textAlign = 'left';
+                c.textBaseline = 'top';
+                c.fillText('U', F.x + 8, F.y + 6);
+                }
+            }
+
+            calculateIntersection() {
+                if (this.selectedSets.size < 2) {
+                    alert('Выберите хотя бы 2 множества');
+                    return;
+                }
+
+                const selectedArray = Array.from(this.selectedSets).map(name => this.sets.get(name));
+                let intersection = new Set(selectedArray[0].elements);
+
+                for (let i = 1; i < selectedArray.length; i++) {
+                    intersection = new Set([...intersection].filter(x => selectedArray[i].elements.includes(x)));
+                }
+
+                this.displayResult(`Пересечение: ${selectedArray.map(s => s.name).join(' ∩ ')}`, intersection);
+                this.updateFormula(selectedArray.map(s => s.name).join(' \\cap '));
+            }
+
+            calculateUnion() {
+                if (this.selectedSets.size === 0) {
+                    alert('Выберите множества');
+                    return;
+                }
+
+                const selectedArray = Array.from(this.selectedSets).map(name => this.sets.get(name));
+                const union = new Set();
+                selectedArray.forEach(set => set.elements.forEach(el => union.add(el)));
+
+                this.displayResult(`Объединение: ${selectedArray.map(s => s.name).join(' ∪ ')}`, union);
+                this.updateFormula(selectedArray.map(s => s.name).join(' \\cup '));
+            }
+
+            calculateDifference() {
+                const setA = document.getElementById('differenceSetA').value;
+                const setB = document.getElementById('differenceSetB').value;
+
+                if (!setA || !setB) {
+                    alert('Выберите два множества');
+                    return;
+                }
+
+                const dataA = this.sets.get(setA);
+                const dataB = this.sets.get(setB);
+                const difference = new Set(dataA.elements.filter(x => !dataB.elements.includes(x)));
+
+                this.displayResult(`Разность: ${setA} \\ ${setB}`, difference);
+                this.updateFormula(`${setA} \\setminus ${setB}`);
+            }
+
+            calculateSymmetricDifference() {
+                const setA = document.getElementById('symmetricSetA').value;
+                const setB = document.getElementById('symmetricSetB').value;
+
+                if (!setA || !setB) {
+                    alert('Выберите два множества');
+                    return;
+                }
+
+                const dataA = this.sets.get(setA);
+                const dataB = this.sets.get(setB);
+
+                const diffAB = dataA.elements.filter(x => !dataB.elements.includes(x));
+                const diffBA = dataB.elements.filter(x => !dataA.elements.includes(x));
+                const symDiff = new Set([...diffAB, ...diffBA]);
+
+                this.displayResult(`Симметрическая разность: ${setA} △ ${setB}`, symDiff);
+                this.updateFormula(`${setA} \\triangle ${setB}`);
+            }
+
+            displayResult(title, resultSet) {
+                const resultContent = document.getElementById('resultContent');
+                const elements = Array.from(resultSet);
+                resultContent.innerHTML = `
+                    <h4>${title}</h4>
+                    <div class="result-set">{ ${elements.join(', ') || '∅'} }</div>
+                    <p style="margin-top: 8px;"><strong>Мощность множества:</strong> ${resultSet.size}</p>
+                `;
+            }
+
+            updateFormula(latex) {
+                const formulaDisplay = document.getElementById('formulaDisplay');
+                formulaDisplay.innerHTML = `\\(${latex}\\)`;
+                if (typeof katex !== 'undefined') {
+                    katex.render(latex, formulaDisplay, { throwOnError: false, displayMode: true });
+                }
+            }
+
+            updateRelationshipInfo() {
+                const relationshipInfo = document.getElementById('relationshipInfo');
+                if (this.sets.size < 2) {
+                    relationshipInfo.innerHTML = '';
+                    return;
+                }
+
+                const setsArray = Array.from(this.sets.values());
+                if (this.sets.size === 2) {
+                    const [A, B] = setsArray;
+                    const inter = this.getIntersection(A, B);
+                    const isAsubB = this.isSubset(A, B);
+                    const isBsubA = this.isSubset(B, A);
+
+                    if (inter.size === 0) {
+                        relationshipInfo.innerHTML = `<h4>${A.name} ∩ ${B.name} = ∅</h4><p>Множества не имеют общих элементов</p>`;
+                    } else if (isAsubB && isBsubA) {
+                        relationshipInfo.innerHTML = `<h4>${A.name} = ${B.name}</h4><p>Множества полностью равны</p>`;
+                    } else if (isAsubB) {
+                        relationshipInfo.innerHTML = `<h4>${A.name} ⊆ ${B.name}</h4><p>${A.name} целиком лежит внутри ${B.name}</p>`;
+                    } else if (isBsubA) {
+                        relationshipInfo.innerHTML = `<h4>${B.name} ⊆ ${A.name}</h4><p>${B.name} целиком лежит внутри ${A.name}</p>`;
+                    } else {
+                        relationshipInfo.innerHTML = `<h4>${A.name} ∩ ${B.name} ≠ ∅</h4><p>Множества имеют общие элементы</p>`;
+                    }
+                } else {
+                    relationshipInfo.innerHTML = `<h4>Создано множеств: ${this.sets.size}</h4>`;
+                }
+            }
+
+            updateElementInfo() {
+                const elementList = document.getElementById('elementList');
+                elementList.innerHTML = '';
+                const allElements = new Map();
+
+                this.sets.forEach(setData => {
+                    setData.elements.forEach(element => {
+                        if (!allElements.has(element)) allElements.set(element, []);
+                        allElements.get(element).push(setData.name);
+                    });
+                });
+
+                allElements.forEach((sets, element) => {
+                    const item = document.createElement('div');
+                    item.className = 'element-item';
+                    item.innerHTML = `<span><strong>${element}</strong></span><span>В множествах: ${sets.join(', ')}</span>`;
+                    elementList.appendChild(item);
+                });
+            }
+
+            toggleTheme(animate = true) {
+                const apply = () => {
+                    this.isDarkTheme = !this.isDarkTheme;
+                    document.body.classList.toggle('dark-theme', this.isDarkTheme);
+                    document.querySelector('.theme-switch').setAttribute('aria-checked', String(this.isDarkTheme));
+                    localStorage.setItem('venn-theme', this.isDarkTheme ? 'dark' : 'light');
+                    this.visualizeSets();
+                };
+                const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                if (animate && !calm && document.startViewTransition) {
+                    document.startViewTransition(apply);
+                } else if (animate && !calm) {
+                    document.body.classList.add('theme-fade');
+                    apply();
+                    setTimeout(() => document.body.classList.remove('theme-fade'), 400);
+                } else {
+                    apply();
+                }
+            }
+
+            showNotification(message, type = 'info') {
+                const container = document.getElementById('notificationContainer');
+                const notification = document.createElement('div');
+                notification.className = `notification ${type === 'warning' ? 'warning' : ''}`;
+                notification.textContent = message;
+                container.appendChild(notification);
+                setTimeout(() => notification.remove(), 4000);
+            }
+
+            clearResult() {
+                document.getElementById('resultContent').innerHTML = '<p>Выберите операцию для отображения результата</p>';
+                document.getElementById('formulaDisplay').innerHTML = '';
+            }
+
+            clearAll() {
+                if (confirm('Очистить все множества?')) {
+                    this.sets.clear();
+                    this.selectedSets.clear();
+                    this.circlePositions.clear();
+                    this.updateUI();
+                    this.clearResult();
+                    this.updateCanvasDataAttribute();
+                    document.getElementById('setName').value = 'A';
+                    document.getElementById('setElements').value = '';
+                }
+            }
+        }
+
+        const visualizer = new SetVisualizer();
+    </script>
+</body>
+</html>

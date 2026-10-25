@@ -4,7 +4,12 @@
 
 **Живой проект:** https://p0m1d0r4ick.github.io/Euler_diagrams/
 
-<!-- Добавьте сюда 2–3 скриншота: обычный случай, «звезда» (A{1,2}, B{1,3}, C{1,4}) и сложный набор из шести множеств -->
+<img width="2100" height="820" alt="изображение" src="https://github.com/user-attachments/assets/b3e995b7-a52a-4b55-a82b-21cb80943a0c" />
+
+<img width="2101" height="820" alt="изображение" src="https://github.com/user-attachments/assets/61d1bf47-14fc-4f59-b380-2318211a2521" />
+
+<img width="2102" height="820" alt="изображение" src="https://github.com/user-attachments/assets/89a83bf7-53ca-41db-bb73-b9fa3e3e6fed" />
+
 
 ## Что умеет
 
